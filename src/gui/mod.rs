@@ -35,6 +35,7 @@ pub fn run_gui() -> Result<(), eframe::Error> {
     let _tray_thread = {
         let quit_id = quit_item.as_ref().map(|q| q.id().clone());
         let show_id = show_item.as_ref().map(|s| s.id().clone());
+        let cmd_tx = tray_cmd_tx.clone();
         
         thread::spawn(move || {
             #[cfg(debug_assertions)]
@@ -54,12 +55,13 @@ pub fn run_gui() -> Result<(), eframe::Error> {
                         #[cfg(debug_assertions)]
                         eprintln!("[DEBUG] Tray thread: Menu event received: event_id={:?}", menu_event.id);
                         
-                        // Handle quit directly - no need to go through GUI
+                        // Handle quit by sending a command to the GUI so it can clean up child processes
                         if let Some(quit_id_val) = &quit_id {
                             if menu_event.id == *quit_id_val {
                                 #[cfg(debug_assertions)]
-                                eprintln!("[DEBUG] Tray thread: Quit command - exiting directly");
-                                std::process::exit(0);
+                                eprintln!("[DEBUG] Tray thread: Quit command - notifying GUI");
+                                let _ = cmd_tx.send(TrayCommand::QuitApplication);
+                                continue;
                             }
                         }
                         
@@ -346,11 +348,23 @@ impl eframe::App for AnimeApp {
                         }
                         TrayCommand::QuitApplication => {
                             #[cfg(debug_assertions)]
-                            eprintln!("[DEBUG] GUI: Quit requested from tray");
+                            eprintln!("[DEBUG] GUI: Quit requested from tray - killing child animations");
+
+                            // Kill all running animation processes before exiting
+                            {
+                                let mut ps = Self::lock_process_store(&self.process_store);
+                                let pids: Vec<u32> = ps.processes.keys().cloned().collect();
+                                for pid in pids {
+                                    let _ = ps.kill_process(pid);
+                                }
+                            }
+
                             self.should_exit = true;
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+
+                            // Give a brief moment for windows to close cleanly, then exit
                             std::thread::spawn(|| {
-                                std::thread::sleep(std::time::Duration::from_millis(100));
+                                std::thread::sleep(std::time::Duration::from_millis(200));
                                 std::process::exit(0);
                             });
                         }
