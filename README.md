@@ -1,6 +1,6 @@
 # Gif-Engine Manager
 
-![Build Status](https://github.com/Arknight38/Gif-Engine/.github/workflows/badge.svg)
+![Build Status](https://github.com/Arknight38/Gif-Engine/workflows/Rust/badge.svg)
 ![Version](https://img.shields.io/badge/version-1.3.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
