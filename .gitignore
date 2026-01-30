@@ -1,0 +1,23 @@
+# System & IDE
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Build Artifacts
+/target
+*.pdb
+*.exe
+*.dll
+*.log
+**/*.rs.bk
+
+# User Data
+store.json
+running.json
+
+# Media (Ignore large files, keep assets)
+*.apng
+*.gif
+# !assets/*.gif # Uncomment if you want to track specific assets
+
