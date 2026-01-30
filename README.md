@@ -4,8 +4,8 @@ A lightweight, high-performance desktop manager built in Rust for playing transp
 
 ## Demonstration
 
-![Main Interface Placeholder](docs/images/interface.png)
-*The main manager interface for organizing your collection.*
+<img width="1005" height="734" alt="image" src="https://github.com/user-attachments/assets/ce029d6b-4f2d-456d-b8fa-7e5d3758f7f8" />
+
 
 ![Desktop Overlay Placeholder](docs/images/overlay_demo.gif)
 *Transparent animations running on the desktop.*
