@@ -5,11 +5,14 @@
 
 ## About
 
-This project took inspiration from Anima Engine, but I was unhappy with the state of Anima Engine and decided to build my own version with improved architecture, better performance, and a more maintainable codebase.
+This project took inspiration from Anima Engine, but I was unhappy with the state of Anima Engine and decided to build my own version with better performance, and an open source codebase.
 
 Main Interface
 
-<img width="1005" height="734" alt="image" src="https://github.com/user-attachments/assets/ce029d6b-4f2d-456d-b8fa-7e5d3758f7f8" />
+<img width="1006" height="734" alt="image" src="https://github.com/user-attachments/assets/cfbb6257-f11b-4549-bbfd-55189ed11d41" />
+
+<img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/6d5e950d-e137-43ab-b1b8-03c24d571030" />
+
 
 
 ---
