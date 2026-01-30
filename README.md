@@ -5,7 +5,8 @@
 
 ![Main Interface](docs/images/interface.png)
 
-**Gif-Engine** allows you to place transparent animations (like mascots, effects, or stickers) anywhere on your screen. Each animation runs in its own isolated process, ensuring your system stays responsive.
+<img width="1005" height="734" alt="image" src="https://github.com/user-attachments/assets/ce029d6b-4f2d-456d-b8fa-7e5d3758f7f8" />
+
 
 ---
 
