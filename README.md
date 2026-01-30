@@ -1,126 +1,141 @@
-# GifEngine Manager
+# Gif-Engine Manager
 
-A lightweight, high-performance desktop manager built in Rust for playing transparent GIFs and APNGs as desktop overlays and mascots.
+> **Your Desktop, Animated.**  
+> A lightweight, high-performance manager for bringing your desktop to life with transparent GIFs and APNGs.
 
-## Demonstration
+![Main Interface](docs/images/interface.png)
 
-![Main Interface Placeholder](docs/images/interface.png)
-*The main manager interface for organizing your collection.*
+**Gif-Engine** allows you to place transparent animations (like mascots, effects, or stickers) anywhere on your screen. Each animation runs in its own isolated process, ensuring your system stays responsive.
 
-![Desktop Overlay Placeholder](docs/images/overlay_demo.gif)
-*Transparent animations running on the desktop.*
+---
 
 ## Features
 
-*   **Transparent Rendering**: Seamlessly renders GIF and APNG animations with transparency directly on your desktop.
-*   **Desktop Overlay**: Windows are borderless, transparent, and can be set to "Always on Top" (Overlay mode).
-*   **Multi-Process Architecture**: Each animation runs in its own isolated process, ensuring the main manager remains responsive.
-*   **Library Management**:
-    *   **Bulk Import**: Scan entire directories for compatible animation files.
-    *   **Drag & Drop**: (Supported via path input)
-    *   **Persistence**: Your library and configuration are saved automatically.
+*   **Desktop Overlays**: Render transparent GIFs and APNGs directly on your screen.
+*   **Performance First**: Multi-process architecture means one heavy animation won't lag the others or the manager.
 *   **Customization**:
-    *   **Positioning**: Presets (Top-Left, Center, etc.) or precise Custom X/Y coordinates.
-    *   **Scaling**: Resize animations from 0.1x to 2.0x.
-    *   **Frame Rate Control**: Override the native FPS of any GIF.
-    *   **Monitor Selection**: Support for multi-monitor setups.
+    *   **Scale**: Resize animations from tiny stickers to massive wallpapers.
+    *   **Speed**: Adjust playback FPS to your liking.
+    *   **Position**: Snap to corners or place them pixel-perfectly.
+    *   **Visibility**: "Always on Top" mode ensures your mascots are never hidden.
+*   **Library Management**:
+    *   **Bulk Import**: Scan folders to add your entire collection at once.
+    *   **Persistence**: Settings are saved automatically.
 *   **System Integration**:
-    *   **Run on Startup**: Option to automatically launch the manager and your animations when Windows starts.
-    *   **System Tray**: Minimizes to the system tray to keep your taskbar clean.
-    *   **Stealth Mode**: Animation windows do not appear in the taskbar or Alt-Tab menu.
-*   **Theming**: Includes Dark and Light themes.
+    *   **System Tray**: Stays out of your way in the notification area.
+    *   **Auto-Start**: Can launch automatically when Windows starts.
+    *   **Stealth Mode**: Animation windows don't clutter your taskbar.
+
+---
 
 ## Installation
 
 ### Prerequisites
-
-*   **Rust**: Ensure you have the latest stable version of Rust installed. [Install Rust](https://www.rust-lang.org/tools/install)
-*   **OS**: Windows 10/11 (Primary target for windowing features).
+*   **Windows 10/11**: Currently the primary supported OS.
+*   **Rust**: Required to build from source. [Install Rust](https://www.rust-lang.org/tools/install).
 
 ### Building from Source
 
-1.  Clone the repository:
+1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/gif-engine.git
+    git clone https://github.com/Arknight38/Gif-Engine.git
     cd gif-engine
     ```
 
-2.  Build the project in release mode:
+2.  **Build**:
     ```bash
     cargo build --release
     ```
 
-3.  The executable will be located in `target/release/gif-engine.exe`.
+3.  **Run**:
+    The executable will be at `target/release/gif-engine.exe`.
 
-## Usage
+---
 
-### Getting Started
+## Usage Guide
 
-1.  Run the application:
-    ```bash
-    cargo run --release
-    ```
-2.  **Add Animations**:
-    *   Click the **Folder Icon (📂)** to select a single `.gif`, `.png`, or `.apng` file.
-    *   Click the **Scan Icon (📁+)** to import all compatible files from a specific directory.
-    *   Alternatively, paste a file path into the text box and press Enter.
+### 1. Launching
+Run the application. You'll see the main **Library** window.
 
-### Managing Animations
+### 2. Adding Animations
+*   **Single File**: Click the folder icon to pick a `.gif` or `.apng`.
+*   **Folder Scan**: Click the folder+ icon to import all compatible files from a folder.
+*   **Manual Path**: Paste a file path in the bottom text box and click **Add**.
 
-*   **Play**: Select an animation from the library list and click **▶ Play**.
-*   **Stop**: Click **⏹ Stop** to close the animation window.
-*   **Restart**: Click **🔄 Restart** to apply new settings to a running animation.
-*   **Delete**: Click **🗑 Delete** to remove the animation from your library.
+### 3. Playing Animations
+*   Select an animation from the list.
+*   Click **Play**.
+*   The animation will appear on your desktop!
 
-### Configuration
+### 4. Customizing
+Select an active or inactive animation to tweak its settings:
+*   **Target FPS**: Speed it up or slow it down.
+*   **Scale**: Make it bigger or smaller.
+*   **Alignment**: Snap it to the bottom-right (classic mascot spot) or anywhere else.
+*   **Overlay**: Toggle "Always on Top" if you want it to float over your browser/games.
 
-Select an animation to view its settings in the right panel:
-*   **Overlay**: Check "Always on top" to keep the animation above other windows.
-*   **Target FPS**: Adjust the playback speed.
-*   **Scale**: Resize the animation.
-*   **Alignment**: Snap to screen corners or use **Custom** for manual X/Y positioning.
+---
 
-### Global Settings
+## Developer Tools
 
-Click **⚙ Settings** at the bottom of the sidebar to:
-*   Enable/Disable **Run on Startup**.
-*   Switch between **Dark** and **Light** themes.
-*   **Clean Dead Processes**: Remove zombie entries if the app wasn't closed properly.
-*   **Reset Library**: Clear all data (Danger Zone).
+### `gen_gif.exe`
+Included in the source is a utility called `gen_gif`. This tool generates a sample validation GIF (`test_assets/sample.gif`) to help test the rendering engine.
+
+**Usage:**
+```bash
+cargo run --bin gen_gif
+```
+This is useful if you want to verify that the transparency and frame timing logic is working correctly with a known-good file.
+
+---
 
 ## Project Structure
 
-*   `src/main.rs`: Entry point and CLI argument parsing.
-*   `src/gui/`: Main application GUI logic (egui).
-*   `src/tui/`: Backend logic, store management, and process handling.
-*   `src/renderer/`: Window creation and frame rendering logic.
-*   `src/decoder/`: GIF/APNG decoding and caching.
-*   `src/cache/`: Frame buffer management.
+For contributors who want to dive into the code:
+
+*   **`src/main.rs`**: The CLI entry point.
+*   **`src/gui/`**: The Manager UI (built with `egui`).
+*   **`src/playback/`**: The logic that runs inside the individual animation windows.
+*   **`src/renderer/`**: Handles the raw window creation and pixel painting.
+*   **`src/decoder/`**: Custom logic for parsing GIF/APNG frames efficiently.
+
+---
+
+## Technical Deep Dive
+
+This section explains the architecture and design decisions behind Gif-Engine for those interested in the internals.
+
+### Multi-Process Architecture
+Gif-Engine uses a multi-process architecture to ensure stability and performance.
+*   **Manager Process**: The main GUI application (the "Library"). It handles user interaction, configuration (stored in `store.json`), and process management.
+*   **Child Processes**: Each animation runs in a completely separate process.
+    *   *Why?* If one animation crashes or hangs (e.g., due to a malformed GIF), it doesn't affect the manager or other animations. It also allows the OS to schedule CPU time more effectively across cores.
+    *   *Communication*: The manager launches child processes with specific CLI arguments (e.g., `--file path/to/gif --x 100 --y 100`).
+
+### Rendering Pipeline
+Rendering transparent windows on Windows is non-trivial. We use the **Windows API (Win32)** directly for window management.
+1.  **Window Creation**: We create a layered window (`WS_EX_LAYERED`) which supports per-pixel alpha blending.
+2.  **Decoding**: We use the `image` crate and custom logic to decode GIF/APNG frames into an RGBA buffer.
+3.  **Compositing**: Frames are composited onto a `FrameBuffer`. This handles "disposal methods" (how the previous frame is cleared before drawing the next one).
+4.  **Presentation**: The final buffer is blitted to the window using GDI functions (`UpdateLayeredWindow`), which preserves the alpha channel for true desktop transparency.
+
+### State Management
+*   **Store**: Application state is persisted in `store.json` using `serde`. This includes the list of imported GIFs and their individual settings (scale, FPS, position).
+*   **Concurrency**: Shared state within the manager is protected by `Arc<Mutex<...>>` (or `RwLock`), allowing the GUI thread and background tasks (like the tray icon handler) to access data safely.
+
+### GUI Framework
+The manager UI is built with **egui**, an immediate mode GUI library for Rust.
+*   It's lightweight and embeds directly into the application executable.
+*   It allows for rapid iteration on the UI layout without complex XAML/HTML/CSS boilerplate.
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps to contribute:
+We welcome contributions! Whether it's fixing bugs, adding features, or improving documentation.
 
-1.  **Fork the Repository**: Create a fork of the project on GitHub.
-2.  **Create a Feature Branch**:
-    ```bash
-    git checkout -b feature/AmazingFeature
-    ```
-3.  **Commit your Changes**:
-    ```bash
-    git commit -m 'Add some AmazingFeature'
-    ```
-4.  **Push to the Branch**:
-    ```bash
-    git push origin feature/AmazingFeature
-    ```
-5.  **Open a Pull Request**: Submit a pull request to the `main` branch.
-
-### Guidelines
-*   Ensure your code adheres to the existing style (run `cargo fmt`).
-*   Check for any warnings or errors (run `cargo check`).
-*   If adding new features, please include a brief description in your PR.
-
-## License
-
-[MIT License](LICENSE)
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request

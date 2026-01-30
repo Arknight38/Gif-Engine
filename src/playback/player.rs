@@ -74,7 +74,7 @@ pub fn play(
 
     // We need to keep the tray icon and menu alive for events to work
     let _tray_icon = TrayIconBuilder::new()
-        .with_tooltip("GifEngine")
+        .with_tooltip("Gif-Engine")
         // We can add an icon here if we have one, but for now just text/default
         // .with_icon(icon) 
         .with_menu(Box::new(tray_menu))

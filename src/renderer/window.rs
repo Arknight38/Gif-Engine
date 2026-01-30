@@ -9,7 +9,7 @@ pub fn create_window(
 ) -> Result<Window, winit::error::OsError> {
     let mut builder = WindowBuilder::new()
         .with_inner_size(winit::dpi::PhysicalSize::new(width, height))
-        .with_title("GifEngine")
+        .with_title("Gif-Engine")
         .with_decorations(false) // Borderless
         .with_transparent(true) // Transparent
         .with_visible(true);

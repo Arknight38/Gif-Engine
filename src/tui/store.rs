@@ -21,16 +21,23 @@ pub struct GifConfig {
 pub struct AppSettings {
     #[serde(default = "default_theme")]
     pub theme: String, // "dark", "light"
+    #[serde(default = "default_minimize_to_tray")]
+    pub minimize_to_tray: bool,
 }
 
 fn default_theme() -> String {
     "dark".to_string()
 }
 
+fn default_minimize_to_tray() -> bool {
+    true
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             theme: default_theme(),
+            minimize_to_tray: default_minimize_to_tray(),
         }
     }
 }

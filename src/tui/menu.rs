@@ -17,7 +17,7 @@ pub fn run_menu() {
         process_store.cleanup_dead_processes();
 
         term.clear_screen().ok();
-        println!("GifEngine - Desktop Anime Manager");
+        println!("Gif-Engine - Desktop Anime Manager");
         println!("---------------------------------");
 
         let choices = vec![

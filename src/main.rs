@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod cache;
 mod decoder;
 mod renderer;
@@ -16,7 +18,7 @@ use crate::cache::frame_buffer::FrameBuffer;
 
 #[derive(Parser)]
 #[command(name = "gif-engine")]
-#[command(about = "GifEngine Player", long_about = None)]
+#[command(about = "Gif-Engine Player", long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,

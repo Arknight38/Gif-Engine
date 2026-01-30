@@ -70,7 +70,7 @@ pub fn run_gui() -> Result<(), eframe::Error> {
                                 eprintln!("[DEBUG] Tray thread: Show command - showing window directly");
                                 
                                 // Find window by title
-                                let window_title = windows::core::w!("GifEngine Manager");
+                                let window_title = windows::core::w!("Gif-Engine Manager");
                                 unsafe {
                                     let hwnd = FindWindowW(PCWSTR::null(), window_title);
                                     // Check if hwnd is valid (not null)
@@ -140,7 +140,7 @@ pub fn run_gui() -> Result<(), eframe::Error> {
     };
     
     eframe::run_native(
-        "GifEngine Manager",
+        "Gif-Engine Manager",
         options,
         Box::new(move |_cc| Box::new(AnimeApp::new(tray_icon, tray_menu, quit_item, show_item, tray_cmd_rx))),
     )
@@ -261,7 +261,7 @@ fn setup_tray(_tray_cmd_tx: mpsc::Sender<TrayCommand>) -> (Option<tray_icon::Tra
     // Tray events will be checked in the GUI's update loop using MenuEvent::receiver()
     let tray_menu = Menu::new();
     let show_item = MenuItem::new("Show Manager", true, None);
-    let quit_item = MenuItem::new("Quit GifEngine", true, None);
+    let quit_item = MenuItem::new("Quit Gif-Engine", true, None);
     
     #[cfg(debug_assertions)]
     {
@@ -276,7 +276,7 @@ fn setup_tray(_tray_cmd_tx: mpsc::Sender<TrayCommand>) -> (Option<tray_icon::Tra
     let menu_box = Box::new(tray_menu);
     let tray_icon = TrayIconBuilder::new()
         .with_menu(menu_box.clone())
-        .with_tooltip("GifEngine Manager")
+        .with_tooltip("Gif-Engine Manager")
         .with_icon(icon)
         .build()
         .ok();
@@ -292,58 +292,13 @@ fn setup_tray(_tray_cmd_tx: mpsc::Sender<TrayCommand>) -> (Option<tray_icon::Tra
 }
 
 fn load_icon_data() -> egui::IconData {
-    // Try multiple paths in order of preference
-    let mut icon_path = None;
+    // Embed the icon at compile time
+    let icon_bytes = include_bytes!("../icon.png");
     
-    // 1. Try current working directory
-    let cwd_path = std::path::PathBuf::from("assets/icon.png");
-    if cwd_path.exists() {
-        icon_path = Some(cwd_path);
-    }
-    
-    // 2. Try relative to executable
-    if icon_path.is_none() {
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(exe_dir) = exe_path.parent() {
-                let exe_relative = exe_dir.join("assets/icon.png");
-                if exe_relative.exists() {
-                    icon_path = Some(exe_relative);
-                }
-            }
-        }
-    }
-    
-    // 3. Try in target directory (for development)
-    if icon_path.is_none() {
-        if let Ok(cwd) = std::env::current_dir() {
-            let target_path = cwd.join("gif-engine/assets/icon.png");
-            if target_path.exists() {
-                icon_path = Some(target_path);
-            }
-        }
-    }
-    
-    // 4. Try in workspace root
-    if icon_path.is_none() {
-        if let Ok(cwd) = std::env::current_dir() {
-            // Go up from target/debug or target/release
-            if let Some(parent) = cwd.parent() {
-                let workspace_path = parent.join("gif-engine/assets/icon.png");
-                if workspace_path.exists() {
-                    icon_path = Some(workspace_path);
-                }
-            }
-        }
-    }
-    
-    let icon_path = icon_path.unwrap_or_else(|| std::path::PathBuf::from("assets/icon.png"));
-
-    if icon_path.exists() {
-        if let Ok(img) = image::open(&icon_path) {
-            let (width, height) = img.dimensions();
-            let rgba = img.into_rgba8().into_raw();
-            return egui::IconData { rgba, width, height };
-        }
+    if let Ok(img) = image::load_from_memory(icon_bytes) {
+        let (width, height) = img.dimensions();
+        let rgba = img.into_rgba8().into_raw();
+        return egui::IconData { rgba, width, height };
     }
 
     // Fallback: Create a simple 32x32 colored box (e.g., Purple)
@@ -362,7 +317,7 @@ fn load_icon_data() -> egui::IconData {
 }
 
 fn get_auto_launch() -> Option<AutoLaunch> {
-    let app_name = "GifEngine";
+    let app_name = "Gif-Engine";
     let app_path = std::env::current_exe().ok()?;
     let path_str = app_path.to_str()?;
     Some(AutoLaunch::new(app_name, path_str, &[] as &[&str]))
@@ -411,7 +366,7 @@ impl eframe::App for AnimeApp {
         }
 
         // Handle Window Close Request
-        // X button: Hide window to tray (app keeps running)
+        // X button: Hide window to tray (app keeps running) OR Quit based on setting
         // Tray "Quit": should_exit=true, then window closes and app exits
         let close_requested = ctx.input(|i| i.viewport().close_requested());
         
@@ -423,38 +378,60 @@ impl eframe::App for AnimeApp {
                 // The window will close and the process will exit (handled by tray thread)
                 self.pending_close_canceled = false; // Reset flag when actually closing
             } else if !self.pending_close_canceled {
-                // User clicked X button - hide to tray, keep app running
-                // Only handle if we haven't already canceled a close request
-                #[cfg(debug_assertions)]
-                eprintln!("[DEBUG] Window close requested (X button) - hiding to tray, app stays running");
+                // User clicked X button
                 
-                // Cancel the close request first
-                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-                
-                // Hide window using Windows APIs (more reliable than eframe commands)
-                #[cfg(target_os = "windows")]
-                {
-                    use windows::Win32::UI::WindowsAndMessaging::{FindWindowW, ShowWindow, SW_HIDE};
-                    use windows::core::PCWSTR;
+                // Check setting: Minimize to tray or Quit?
+                let minimize_to_tray = {
+                    let store = Self::lock_store(&self.store);
+                    store.settings.minimize_to_tray
+                };
+
+                if minimize_to_tray {
+                    // Hide to tray, keep app running
+                    #[cfg(debug_assertions)]
+                    eprintln!("[DEBUG] Window close requested (X button) - hiding to tray, app stays running");
                     
-                    let window_title = windows::core::w!("GifEngine Manager");
-                    unsafe {
-                        let hwnd = FindWindowW(PCWSTR::null(), window_title);
-                        if hwnd.0 != 0 {
-                            ShowWindow(hwnd, SW_HIDE);
-                            #[cfg(debug_assertions)]
-                            eprintln!("[DEBUG] Window hidden using Windows API");
+                    // Cancel the close request first
+                    ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                    
+                    // Hide window using Windows APIs (more reliable than eframe commands)
+                    #[cfg(target_os = "windows")]
+                    {
+                        use windows::Win32::UI::WindowsAndMessaging::{FindWindowW, ShowWindow, SW_HIDE};
+                        use windows::core::PCWSTR;
+                        
+                        let window_title = windows::core::w!("Gif-Engine Manager");
+                        unsafe {
+                            let hwnd = FindWindowW(PCWSTR::null(), window_title);
+                            if hwnd.0 != 0 {
+                                ShowWindow(hwnd, SW_HIDE);
+                                #[cfg(debug_assertions)]
+                                eprintln!("[DEBUG] Window hidden using Windows API");
+                            }
                         }
                     }
+                    
+                    // Also try eframe command as fallback
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
+                    }
+                    
+                    self.pending_close_canceled = true; // Mark that we've canceled
+                } else {
+                    // Quit application
+                    #[cfg(debug_assertions)]
+                    eprintln!("[DEBUG] Window close requested (X button) - quitting application (minimize_to_tray=false)");
+                    self.should_exit = true;
+                    // Don't cancel close, let it propagate.
+                    // But we should also make sure the process actually exits, 
+                    // because eframe might just close the window and wait if run_and_return=false
+                    // So we spawn a thread to force exit after a moment, just like tray quit
+                     std::thread::spawn(|| {
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        std::process::exit(0);
+                    });
                 }
-                
-                // Also try eframe command as fallback
-                #[cfg(not(target_os = "windows"))]
-                {
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Visible(false));
-                }
-                
-                self.pending_close_canceled = true; // Mark that we've canceled
             }
         } else {
             // No close request - reset the flag so we can handle the next one
@@ -634,6 +611,8 @@ impl AnimeApp {
              // Theme (Basic Toggle for now, though Store supports it, we need to apply it)
              let mut store = Self::lock_store(&self.store);
              let mut theme = store.settings.theme.clone();
+             let mut minimize = store.settings.minimize_to_tray;
+             
              ui.horizontal(|ui| {
                  ui.label("Theme:");
                  if ui.selectable_value(&mut theme, "dark".to_string(), "Dark").clicked() 
@@ -642,6 +621,11 @@ impl AnimeApp {
                      let _ = store.save();
                  }
              });
+             
+             if ui.checkbox(&mut minimize, "Minimize to Tray on Close").changed() {
+                 store.settings.minimize_to_tray = minimize;
+                 let _ = store.save();
+             }
         });
         
         ui.add_space(20.0);
@@ -961,7 +945,7 @@ impl AnimeApp {
                             if path.is_file() {
                                 if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                                      let ext = ext.to_lowercase();
-                                     if ext == "gif" || ext == "png" || ext == "apng" {
+                                     if ext == "gif" || ext == "apng" {
                                          let name = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
                                          if !name.is_empty() && !store.gifs.contains_key(&name) {
                                              store.add_gif(name, path);
