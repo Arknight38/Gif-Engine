@@ -654,10 +654,10 @@ impl AnimeApp {
         
         // About
         ui.collapsing("About", |ui| {
-            ui.label("Desktop Anime Manager v0.1.0");
+            ui.label(format!("Desktop Anime Manager v{}", env!("CARGO_PKG_VERSION")));
             ui.label("A lightweight engine for playing GIFs/WebPs on your desktop.");
             ui.add_space(10.0);
-            ui.hyperlink("https://github.com/your-repo/gif-engine");
+            ui.hyperlink("https://github.com/Arknight38/Gif-Engine");
         });
     }
 
