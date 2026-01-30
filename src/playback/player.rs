@@ -1,13 +1,12 @@
 use crate::cache::frame_buffer::FrameBuffer;
 use crate::renderer::painter::Painter;
 use crate::renderer::window::create_window;
-use crate::tui::process::ProcessStore;
+use crate::app::process::ProcessStore;
 use softbuffer::Context;
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 use winit::event::{Event, WindowEvent, ElementState, MouseButton};
 use winit::event_loop::{ControlFlow, EventLoop};
-use tray_icon::{TrayIconBuilder, menu::{Menu, MenuItem}};
 
 use crate::platform;
 
@@ -64,25 +63,6 @@ pub fn play(
         platform::set_overlay(&window);
     }
 
-    // Setup System Tray
-    let tray_menu = Menu::new();
-    let quit_i = MenuItem::new("Quit Animation", true, None);
-    tray_menu.append(&quit_i)?;
-
-    #[cfg(debug_assertions)]
-    eprintln!("[DEBUG] Player tray menu setup: Quit item ID: {:?}", quit_i.id());
-
-    // We need to keep the tray icon and menu alive for events to work
-    let _tray_icon = TrayIconBuilder::new()
-        .with_tooltip("Gif-Engine")
-        // We can add an icon here if we have one, but for now just text/default
-        // .with_icon(icon) 
-        .with_menu(Box::new(tray_menu))
-        .build()?;
-
-    #[cfg(debug_assertions)]
-    eprintln!("[DEBUG] Player tray icon created successfully");
-
     let context = Context::new(window.clone())?;
     let mut painter = Painter::new(&context, window.clone())?;
 
@@ -96,27 +76,6 @@ pub fn play(
     println!("Starting event loop...");
     event_loop.run(move |event, elwt| {
         elwt.set_control_flow(ControlFlow::Poll);
-
-        // Check for tray events
-        // MenuEvent::receiver() returns a static receiver - the menu must be kept alive
-        // (via _tray_icon) for events to be properly routed
-        if let Ok(menu_event) = tray_icon::menu::MenuEvent::receiver().try_recv() {
-            #[cfg(debug_assertions)]
-            eprintln!("[DEBUG] Player tray menu event received: event_id={:?}, quit_id={:?}", menu_event.id, quit_i.id());
-            
-            if menu_event.id == quit_i.id() {
-                 #[cfg(debug_assertions)]
-                 eprintln!("[DEBUG] Player: Tray Quit requested - exiting");
-                 println!("Tray Quit requested");
-                 // Remove self from store before exiting
-                 let mut ps = ProcessStore::load();
-                 ps.remove_self();
-                 elwt.exit();
-            } else {
-                #[cfg(debug_assertions)]
-                eprintln!("[DEBUG] Player: Tray menu event ID mismatch - event_id={:?}, expected quit_id={:?}", menu_event.id, quit_i.id());
-            }
-        }
 
         match event {
             Event::WindowEvent { event, window_id } if window_id == window.id() => {

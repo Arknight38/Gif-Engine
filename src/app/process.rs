@@ -4,6 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use sysinfo::{Pid, System};
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::app::dirs;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RunningProcess {
@@ -101,9 +102,4 @@ impl ProcessStore {
     }
 }
 
-mod dirs {
-    use std::path::PathBuf;
-    pub fn config_dir() -> Option<PathBuf> {
-        Some(PathBuf::from(".")) 
-    }
-}
+

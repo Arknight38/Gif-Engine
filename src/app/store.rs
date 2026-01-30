@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use crate::app::dirs;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GifConfig {
@@ -50,6 +51,11 @@ pub struct Store {
 }
 
 impl Store {
+    fn gifs_dir() -> PathBuf {
+        let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+        config_dir.join("gif-engine").join("gifs")
+    }
+
     pub fn load() -> Self {
         let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
         let store_path = config_dir.join("gif-engine").join("store.json");
@@ -88,8 +94,27 @@ impl Store {
         Ok(())
     }
 
-    pub fn add_gif(&mut self, name: String, path: PathBuf) {
-        let abs_path = fs::canonicalize(&path).unwrap_or(path);
+    pub fn add_gif(&mut self, name: String, path: PathBuf) -> Result<(), std::io::Error> {
+        // Ensure the gifs directory exists
+        let gifs_dir = Self::gifs_dir();
+        if !gifs_dir.exists() {
+            fs::create_dir_all(&gifs_dir)?;
+        }
+
+        // Get the file extension from the original path
+        let extension = path.extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("gif");
+        
+        // Create the destination path in appdata
+        let dest_path = gifs_dir.join(format!("{}.{}", name, extension));
+        
+        // Copy the file to appdata
+        fs::copy(&path, &dest_path)?;
+        
+        // Use the copied file's absolute path
+        let abs_path = fs::canonicalize(&dest_path).unwrap_or(dest_path);
+        
         let config = GifConfig {
             path: abs_path,
             name: name.clone(),
@@ -101,6 +126,8 @@ impl Store {
             overlay: true,
         };
         self.gifs.insert(name, config);
+        
+        Ok(())
     }
     
     pub fn get_gif(&self, name: &str) -> Option<&GifConfig> {
@@ -108,12 +135,4 @@ impl Store {
     }
 }
 
-// Simple helper to find config dir since `dirs` crate isn't added yet, let's just use local for now or add `dirs`
-// Wait, I should add `dirs` if I want to use it. Or just use a local file for now.
-// Let's use local file "anime-store.json" for simplicity in this session.
-mod dirs {
-    use std::path::PathBuf;
-    pub fn config_dir() -> Option<PathBuf> {
-        Some(PathBuf::from(".")) 
-    }
-}
+

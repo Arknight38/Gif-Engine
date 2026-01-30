@@ -3,6 +3,10 @@
 > **Your Desktop, Animated.**  
 > A lightweight, high-performance manager for bringing your desktop to life with transparent GIFs and APNGs.
 
+## About
+
+This project took inspiration from Anima Engine, but I was unhappy with the state of Anima Engine and decided to build my own version with improved architecture, better performance, and a more maintainable codebase.
+
 Main Interface
 
 <img width="1005" height="734" alt="image" src="https://github.com/user-attachments/assets/ce029d6b-4f2d-456d-b8fa-7e5d3758f7f8" />
@@ -121,7 +125,8 @@ Rendering transparent windows on Windows is non-trivial. We use the **Windows AP
 4.  **Presentation**: The final buffer is blitted to the window using GDI functions (`UpdateLayeredWindow`), which preserves the alpha channel for true desktop transparency.
 
 ### State Management
-*   **Store**: Application state is persisted in `store.json` using `serde`. This includes the list of imported GIFs and their individual settings (scale, FPS, position).
+*   **Store**: Application state is persisted in `store.json` using `serde`. This file is stored in `%APPDATA%\gif-engine` (e.g., `C:\Users\YourName\AppData\Roaming\gif-engine`), following Windows standards. This ensures your settings are safe and separate from the executable.
+*   **GIF Storage**: When you add a GIF or APNG to the library, it is automatically copied to `%APPDATA%\gif-engine\gifs\` directory. This ensures your animations are preserved even if the original files are moved or deleted, and keeps everything organized in one location alongside the configuration files.
 *   **Concurrency**: Shared state within the manager is protected by `Arc<Mutex<...>>` (or `RwLock`), allowing the GUI thread and background tasks (like the tray icon handler) to access data safely.
 
 ### GUI Framework

@@ -2,8 +2,8 @@ use eframe::egui;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
-use crate::tui::store::{Store, GifConfig};
-use crate::tui::process::ProcessStore;
+use crate::app::store::{Store, GifConfig};
+use crate::app::process::ProcessStore;
 use crate::types::{Frame, AnimationInfo};
 use std::process::Command;
 use tray_icon::{TrayIconBuilder, menu::{Menu, MenuItem, MenuEvent}};
@@ -948,8 +948,9 @@ impl AnimeApp {
                                      if ext == "gif" || ext == "apng" {
                                          let name = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
                                          if !name.is_empty() && !store.gifs.contains_key(&name) {
-                                             store.add_gif(name, path);
-                                             count += 1;
+                                             if store.add_gif(name, path).is_ok() {
+                                                 count += 1;
+                                             }
                                          }
                                      }
                                 }
@@ -971,9 +972,10 @@ impl AnimeApp {
                      if path.exists() {
                          let name = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
                          if !name.is_empty() {
-                             store.add_gif(name, path);
-                             let _ = store.save();
-                             self.input_path.clear();
+                             if store.add_gif(name, path).is_ok() {
+                                 let _ = store.save();
+                                 self.input_path.clear();
+                             }
                          }
                      }
                  }
