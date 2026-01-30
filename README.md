@@ -166,9 +166,6 @@ If you find this useful, consider giving it a star ⭐ - it helps others discove
 ![GitHub issues](https://img.shields.io/github/issues/Arknight38/Gif-Engine)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/Arknight38/Gif-Engine)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Arknight38/Gif-Engine)
-![GitHub repo size](https://img.shields.io/github/repo-size/Arknight38/Gif-Engine)
-![Lines of code](https://img.shields.io/tokei/lines/github/Arknight38/Gif-Engine)
-![GitHub downloads](https://img.shields.io/github/downloads/Arknight38/Gif-Engine/total)
 
 ### Contributors
 
