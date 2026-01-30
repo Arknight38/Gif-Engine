@@ -10,7 +10,7 @@
 
 I started this project because I wanted something better than Anima Engine. The concept was great, but I ran into performance issues and wanted more control over how it worked and looked. So I rebuilt it from scratch in Rust with a focus on stability through multi-process architecture (still working on making it bulletproof) and keeping the codebase open for anyone to contribute to or learn from.
 
-##Screenshots
+## Screenshots
 
 <img width="1006" height="734" alt="image" src="https://github.com/user-attachments/assets/cfbb6257-f11b-4549-bbfd-55189ed11d41" />
 
