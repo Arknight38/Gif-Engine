@@ -1,7 +1,7 @@
 # Gif-Engine
 
 ![Build Status](https://github.com/Arknight38/Gif-Engine/workflows/Rust/badge.svg)
-![Version](https://img.shields.io/badge/version-1.3.0-blue)
+![Version](https://img.shields.io/badge/version-1.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 **Desktop animation manager for Windows - built for performance and stability.**
