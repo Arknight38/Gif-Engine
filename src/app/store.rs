@@ -24,6 +24,8 @@ pub struct AppSettings {
     pub theme: String, // "dark", "light"
     #[serde(default = "default_minimize_to_tray")]
     pub minimize_to_tray: bool,
+    #[serde(default = "default_click_through")]
+    pub click_through: bool,
 }
 
 fn default_theme() -> String {
@@ -34,11 +36,16 @@ fn default_minimize_to_tray() -> bool {
     true
 }
 
+fn default_click_through() -> bool {
+    false
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             theme: default_theme(),
             minimize_to_tray: default_minimize_to_tray(),
+            click_through: default_click_through(),
         }
     }
 }

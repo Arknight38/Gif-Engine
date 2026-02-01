@@ -50,9 +50,13 @@ enum Commands {
         #[arg(long)]
         y: Option<i32>,
 
-        /// Enable overlay mode (always-on-top, click-through)
+        /// Enable overlay mode (always-on-top)
         #[arg(long)]
         overlay: bool,
+
+        /// Enable click-through mode (requires overlay)
+        #[arg(long)]
+        click_through: bool,
 
         /// Alignment (top-left, top-right, bottom-left, bottom-right, center, custom)
         #[arg(long, default_value = "center")]
@@ -101,7 +105,7 @@ fn main() {
             }
         }
         // Playback entry used by the GUI when you press Play
-        Some(Commands::Play { file, fps, scale, x, y, overlay, align, monitor }) => {
+        Some(Commands::Play { file, fps, scale, x, y, overlay, click_through, align, monitor }) => {
             println!("Playing from CLI: {:?}", file);
             match decoder::load_animation(file) {
                 Ok((mut info, mut frames)) => {
@@ -142,6 +146,7 @@ fn main() {
                         info.width as u32,
                         info.height as u32,
                         *overlay,
+                        *click_through,
                         x.zip(*y),
                         align.clone(),
                         *monitor,

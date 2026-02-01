@@ -15,6 +15,7 @@ pub fn play(
     width: u32,
     height: u32,
     overlay: bool,
+    click_through: bool,
     position: Option<(i32, i32)>,
     align: String,
     monitor_id: usize,
@@ -60,7 +61,7 @@ pub fn play(
     let window = Rc::new(create_window(&event_loop, width, height, final_position)?);
 
     if overlay {
-        platform::set_overlay(&window);
+        platform::set_overlay(&window, click_through);
     }
 
     let context = Context::new(window.clone())?;
@@ -72,10 +73,23 @@ pub fn play(
     // State for manual dragging to avoid blocking the loop
     let mut is_dragging = false;
     let mut drag_start_mouse = (0.0, 0.0);
+    let mut ctrl_was_pressed = false;
 
     println!("Starting event loop...");
     event_loop.run(move |event, elwt| {
         elwt.set_control_flow(ControlFlow::Poll);
+
+        // When click-through is enabled, poll for Ctrl key state globally in every frame
+        // This allows us to temporarily disable click-through when Ctrl is held
+        if click_through {
+            let ctrl_pressed = platform::is_ctrl_pressed();
+            
+            // Only toggle click-through when Ctrl state changes to avoid flickering
+            if ctrl_pressed != ctrl_was_pressed {
+                platform::set_click_through(&window, !ctrl_pressed);
+                ctrl_was_pressed = ctrl_pressed;
+            }
+        }
 
         match event {
             Event::WindowEvent { event, window_id } if window_id == window.id() => {
@@ -87,13 +101,18 @@ pub fn play(
                         elwt.exit();
                     },
                     WindowEvent::MouseInput { state, button: MouseButton::Left, .. } => {
-                        match state {
-                            ElementState::Pressed => {
-                                is_dragging = true;
-                            },
-                            ElementState::Released => {
-                                is_dragging = false;
-                            },
+                        // If click-through is enabled, we only get mouse events when Ctrl is held
+                        // (because we disable click-through when Ctrl is pressed)
+                        // If click-through is disabled, always allow interaction
+                        if !click_through || ctrl_was_pressed {
+                            match state {
+                                ElementState::Pressed => {
+                                    is_dragging = true;
+                                },
+                                ElementState::Released => {
+                                    is_dragging = false;
+                                },
+                            }
                         }
                     },
                     WindowEvent::CursorMoved { position, .. } => {

@@ -55,13 +55,23 @@ pub fn run_gui() -> Result<(), eframe::Error> {
                         #[cfg(debug_assertions)]
                         eprintln!("[DEBUG] Tray thread: Menu event received: event_id={:?}", menu_event.id);
                         
-                        // Handle quit by sending a command to the GUI so it can clean up child processes
+                        // Handle quit directly - kill all processes and exit
+                        // This works even when the window is hidden and update() isn't being called
                         if let Some(quit_id_val) = &quit_id {
                             if menu_event.id == *quit_id_val {
                                 #[cfg(debug_assertions)]
-                                eprintln!("[DEBUG] Tray thread: Quit command - notifying GUI");
-                                let _ = cmd_tx.send(TrayCommand::QuitApplication);
-                                continue;
+                                eprintln!("[DEBUG] Tray thread: Quit command - killing processes and exiting");
+                                
+                                // Kill all running animation processes before exiting
+                                use crate::app::process::ProcessStore;
+                                let mut ps = ProcessStore::load();
+                                let pids: Vec<u32> = ps.processes.keys().cloned().collect();
+                                for pid in pids {
+                                    let _ = ps.kill_process(pid);
+                                }
+                                
+                                // Exit immediately
+                                std::process::exit(0);
                             }
                         }
                         
@@ -330,6 +340,7 @@ impl eframe::App for AnimeApp {
         // Handle commands from the background tray thread
         // The tray thread polls MenuEvent::receiver() and sends commands via channel
         // This works even when the window is hidden because the thread runs independently
+        // Use blocking receive with timeout to ensure we process quit commands even when hidden
         loop {
             match self.tray_cmd_rx.try_recv() {
                 Ok(cmd) => {
@@ -359,14 +370,8 @@ impl eframe::App for AnimeApp {
                                 }
                             }
 
-                            self.should_exit = true;
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-
-                            // Give a brief moment for windows to close cleanly, then exit
-                            std::thread::spawn(|| {
-                                std::thread::sleep(std::time::Duration::from_millis(200));
-                                std::process::exit(0);
-                            });
+                            // Force exit immediately - don't wait for window close
+                            std::process::exit(0);
                         }
                     }
                 }
@@ -608,7 +613,7 @@ impl AnimeApp {
         ui.separator();
         
         // General Settings
-        ui.collapsing("General", |ui| {
+        ui.vertical(|ui| {
             // Startup
             let mut enabled = self.startup_enabled;
              if ui.checkbox(&mut enabled, "Run on Startup").changed() {
@@ -640,12 +645,21 @@ impl AnimeApp {
                  store.settings.minimize_to_tray = minimize;
                  let _ = store.save();
              }
+             
+             // Click-through setting
+             let mut click_through = store.settings.click_through;
+             ui.add_space(10.0);
+             if ui.checkbox(&mut click_through, "Enable Click-Through for Animations").changed() {
+                 store.settings.click_through = click_through;
+                 let _ = store.save();
+             }
+             ui.label(egui::RichText::new("When enabled, animations won't block mouse clicks. Hold Ctrl and drag to move them.").small().weak());
         });
         
         ui.add_space(20.0);
         
         // Data Management
-        ui.collapsing("Data Management", |ui| {
+        ui.vertical(|ui| {
             if ui.button("Clean Dead Processes").clicked() {
                 if let Ok(mut ps) = self.process_store.lock() {
                     ps.cleanup_dead_processes();
@@ -667,7 +681,7 @@ impl AnimeApp {
         ui.add_space(20.0);
         
         // About
-        ui.collapsing("About", |ui| {
+        ui.vertical(|ui| {
             ui.label(format!("Desktop Anime Manager v{}", env!("CARGO_PKG_VERSION")));
             ui.label("A lightweight engine for playing GIFs/WebPs on your desktop.");
             ui.add_space(10.0);
@@ -926,6 +940,15 @@ impl AnimeApp {
 
         if config.overlay {
             cmd.arg("--overlay");
+        }
+        
+        // Get click-through setting from store
+        let click_through = {
+            let store = Self::lock_store(&self.store);
+            store.settings.click_through
+        };
+        if click_through {
+            cmd.arg("--click-through");
         }
 
         match cmd.spawn() {
