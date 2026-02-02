@@ -133,16 +133,12 @@ Standard process:
 ## Road map/Planned Features
 
 - [ ] Scene profiles (save and switch between different animation layouts)
-- [ ] Tags and search for the library
+- [x] Tags and search for the library
 - [ ] Global hotkeys (pause all, resume all, toggle visibility)
 - [ ] Per-animation opacity slider
 - [ ] Option to hide animations when a window is fullscreen
-- [ ] Better preview (scrub timeline, show FPS and resolution)
-- [ ] Group animations (folders or collections in the library)
-- [ ] Export / import library and settings
-- [ ] Optional FPS cap for all animations at once
+- [x] Export / import library and settings
 - [ ] Basic logging window for errors (failed loads, crashes, etc.)
-- [ ] More configuration for auto-start behavior
 - [ ] Add a “minimal CPU mode” preset
 - [ ] Support for more formats (e.g. WebP) if it makes sense
 - [ ] Simple in-app “What’s new” / changelog panel

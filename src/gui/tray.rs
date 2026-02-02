@@ -100,6 +100,10 @@ pub fn spawn_tray_thread(quit_id: Option<tray_icon::menu::MenuId>, show_id: Opti
         
         #[cfg(target_os = "windows")]
         {
+            // Keep the sender alive even though we don't use it on Windows
+            // This prevents the channel from disconnecting
+            let _sender = tray_cmd_tx;
+            
             use windows::Win32::UI::WindowsAndMessaging::{
                 FindWindowW, ShowWindow, SW_SHOW, SW_RESTORE,
                 SetForegroundWindow, IsIconic,

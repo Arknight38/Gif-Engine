@@ -1,12 +1,9 @@
 use eframe::egui;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 use std::thread;
 use std::process::Command;
-use crate::app::store::{Store, GifConfig};
-use crate::app::process::ProcessStore;
+use crate::app::store::GifConfig;
 use crate::gui::app::{AnimeApp, ViewMode};
-use crate::gui::preview::PreviewState;
 
 impl AnimeApp {
     pub fn show_settings_panel(&mut self, ui: &mut egui::Ui) {
@@ -68,6 +65,40 @@ impl AnimeApp {
         
         // Data Management
         ui.vertical(|ui| {
+            ui.label(egui::RichText::new("Export / Import").size(16.0));
+            ui.horizontal(|ui| {
+                if ui.button("📤 Export Library & Settings").clicked() {
+                    let store = Self::lock_store(&self.store);
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter("ZIP Archive", &["zip"])
+                        .set_file_name("gif-engine-backup.zip")
+                        .save_file() {
+                        if let Err(e) = store.export_zip(&path) {
+                            eprintln!("Failed to export: {}", e);
+                        }
+                    }
+                }
+                
+                if ui.button("📥 Import Library & Settings").clicked() {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .add_filter("ZIP Archive", &["zip"])
+                        .pick_file() {
+                        let mut store = Self::lock_store(&self.store);
+                        // Merge by default (adds/updates animations, updates settings)
+                        if let Err(e) = store.import_zip(&path, true) {
+                            eprintln!("Failed to import: {}", e);
+                        } else {
+                            let _ = store.save();
+                            // Refresh UI
+                            self.selected_name = None;
+                            self.preview = None;
+                        }
+                    }
+                }
+            });
+            ui.label(egui::RichText::new("Export creates a ZIP file with all animations and settings. Import merges with existing data.").small().weak());
+            
+            ui.add_space(10.0);
             if ui.button("Clean Dead Processes").clicked() {
                 if let Ok(mut ps) = self.process_store.lock() {
                     ps.cleanup_dead_processes();
@@ -141,7 +172,19 @@ impl AnimeApp {
                     }
                 } else if let Some(preview) = &self.preview {
                     if let Some(texture) = &preview.texture {
-                         ui.image((texture.id(), texture.size_vec2()));
+                        // Constrain image to fit available width without expanding window
+                        let available_width = ui.available_width();
+                        let texture_size = texture.size_vec2();
+                        let aspect_ratio = texture_size.y / texture_size.x;
+                        
+                        // Calculate size that fits within available width
+                        let max_width = available_width;
+                        let display_width = max_width.min(texture_size.x);
+                        let display_height = display_width * aspect_ratio;
+                        
+                        // Show image with constrained size - use fit_to_exact_size to ensure it doesn't expand
+                        ui.add(egui::Image::new((texture.id(), egui::vec2(display_width, display_height)))
+                            .fit_to_exact_size(egui::vec2(display_width, display_height)));
                     }
                     ui.label(format!("Original: {}x{} @ {:.2} FPS", 
                         preview.info.width, 
@@ -156,35 +199,37 @@ impl AnimeApp {
 
             // Controls
             ui.horizontal(|ui| {
-                let is_running = {
+                // Get count of running instances
+                let running_count = {
                     let ps = Self::lock_process_store(&self.process_store);
-                    ps.processes.values().any(|info| info.name == name)
+                    ps.processes.values().filter(|info| info.name == name).count()
                 };
 
-                if is_running {
-                    if ui.button("🔄 Restart").clicked() {
-                        // Kill existing
-                         let pid_opt = {
+                // Always show Play button - allow multiple instances
+                if ui.button("▶ Play").clicked() {
+                    to_launch = Some(name.clone());
+                }
+                
+                // Show count if running
+                if running_count > 0 {
+                    ui.label(format!("({} running)", running_count));
+                }
+                
+                // Show Stop All button if any are running
+                if running_count > 0 {
+                    if ui.button("⏹ Stop All").clicked() {
+                        let pids: Vec<u32> = {
                             let ps = Self::lock_process_store(&self.process_store);
-                            ps.processes.iter().find(|(_, info)| info.name == name).map(|(pid, _)| *pid)
+                            ps.processes.iter()
+                                .filter(|(_, info)| info.name == name)
+                                .map(|(pid, _)| *pid)
+                                .collect()
                         };
-                        if let Some(pid) = pid_opt {
-                            if let Ok(mut ps) = self.process_store.lock() { ps.kill_process(pid); }
+                        if let Ok(mut ps) = self.process_store.lock() {
+                            for pid in pids {
+                                let _ = ps.kill_process(pid);
+                            }
                         }
-                        to_launch = Some(name.clone());
-                    }
-                    if ui.button("⏹ Stop").clicked() {
-                        let pid_opt = {
-                            let ps = Self::lock_process_store(&self.process_store);
-                            ps.processes.iter().find(|(_, info)| info.name == name).map(|(pid, _)| *pid)
-                        };
-                        if let Some(pid) = pid_opt {
-                            if let Ok(mut ps) = self.process_store.lock() { ps.kill_process(pid); }
-                        }
-                    }
-                } else {
-                    if ui.button("▶ Play").clicked() {
-                        to_launch = Some(name.clone());
                     }
                 }
                 
@@ -291,6 +336,46 @@ impl AnimeApp {
                         ui.label(egui::RichText::new("Controlled by Alignment").weak());
                         ui.end_row();
                     }
+                    
+                    // Tags
+                    ui.label("Tags:");
+                    ui.horizontal_wrapped(|ui| {
+                        let mut tags_to_remove = Vec::new();
+                        for (idx, tag) in config.tags.iter().enumerate() {
+                            ui.group(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(tag);
+                                    if ui.small_button("✖").clicked() {
+                                        tags_to_remove.push(idx);
+                                        should_save = true;
+                                    }
+                                });
+                            });
+                        }
+                        // Remove tags in reverse order to maintain indices
+                        for idx in tags_to_remove.iter().rev() {
+                            config.tags.remove(*idx);
+                        }
+                        
+                        // Add new tag input
+                        let mut new_tag = String::new();
+                        let response = ui.text_edit_singleline(&mut new_tag);
+                        if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                            let trimmed = new_tag.trim().to_string();
+                            if !trimmed.is_empty() && !config.tags.contains(&trimmed) {
+                                config.tags.push(trimmed);
+                                should_save = true;
+                            }
+                        }
+                        if ui.button("+").clicked() {
+                            let trimmed = new_tag.trim().to_string();
+                            if !trimmed.is_empty() && !config.tags.contains(&trimmed) {
+                                config.tags.push(trimmed);
+                                should_save = true;
+                            }
+                        }
+                    });
+                    ui.end_row();
                 });
 
         }
@@ -300,6 +385,20 @@ impl AnimeApp {
         }
         
         if let Some(n) = to_delete {
+            // Kill all running instances of this animation
+            let pids: Vec<u32> = {
+                let ps = Self::lock_process_store(&self.process_store);
+                ps.processes.iter()
+                    .filter(|(_, info)| info.name == n)
+                    .map(|(pid, _)| *pid)
+                    .collect()
+            };
+            if let Ok(mut ps) = self.process_store.lock() {
+                for pid in pids {
+                    let _ = ps.kill_process(pid);
+                }
+            }
+            
             if self.selected_name.as_ref() == Some(&n) {
                 self.selected_name = None;
                 self.preview = None;
@@ -372,6 +471,18 @@ impl AnimeApp {
         ui.heading("Library");
         ui.add_space(10.0);
         
+        // Search Bar
+        ui.horizontal(|ui| {
+            ui.label("🔍");
+            ui.text_edit_singleline(&mut self.search_query);
+            if !self.search_query.is_empty() {
+                if ui.button("✖").clicked() {
+                    self.search_query.clear();
+                }
+            }
+        });
+        ui.add_space(5.0);
+        
         // Add Section
         ui.horizontal(|ui| {
             if ui.button("📂").on_hover_text("Browse file").clicked() {
@@ -432,24 +543,53 @@ impl AnimeApp {
         let store = Self::lock_store(&self.store);
         let mut keys: Vec<String> = store.gifs.keys().cloned().collect();
         keys.sort();
+        
+        // Filter by search query (name or tags)
+        let search_lower = self.search_query.to_lowercase();
+        let filtered_keys: Vec<String> = if search_lower.is_empty() {
+            keys
+        } else {
+            keys.into_iter().filter(|name| {
+                // Match name
+                if name.to_lowercase().contains(&search_lower) {
+                    return true;
+                }
+                // Match tags
+                if let Some(config) = store.gifs.get(name) {
+                    for tag in &config.tags {
+                        if tag.to_lowercase().contains(&search_lower) {
+                            return true;
+                        }
+                    }
+                }
+                false
+            }).collect()
+        };
 
-        egui::ScrollArea::vertical().show(ui, |ui| {
+        egui::ScrollArea::vertical()
+            .auto_shrink([false; 2])
+            .show(ui, |ui| {
             ui.spacing_mut().item_spacing = egui::vec2(0.0, 5.0);
-            for name in keys {
+            for name in filtered_keys {
                 ui.push_id(&name, |ui| {
                     let is_selected = self.selected_name.as_ref() == Some(&name);
                     
-                    // Check running status
-                    let is_running = {
+                    // Check running status and count
+                    let running_count = {
                          let ps = Self::lock_process_store(&self.process_store);
-                         ps.processes.values().any(|info| info.name == name)
+                         ps.processes.values().filter(|info| info.name == name).count()
                     };
 
-                    let label = if is_running {
-                        format!("▶ {}", name)
+                    let label = if running_count > 0 {
+                        format!("▶ {} ({})", name, running_count)
                     } else {
                         name.clone()
                     };
+                    
+                    // Show tags if they exist
+                    let has_tags = store.gifs.get(&name)
+                        .map(|config| !config.tags.is_empty())
+                        .unwrap_or(false);
 
                     if ui.selectable_label(is_selected, label).clicked() {
                         self.view = ViewMode::Library; // Ensure we switch back to library view
@@ -470,9 +610,102 @@ impl AnimeApp {
                             }
                         }
                     }
+                    
+                    // Show tags below the name if they exist
+                    if has_tags {
+                        if let Some(config) = store.gifs.get(&name) {
+                            if !config.tags.is_empty() {
+                                ui.horizontal_wrapped(|ui| {
+                                    for tag in &config.tags {
+                                        ui.label(egui::RichText::new(format!("🏷 {}", tag)).small().weak());
+                                    }
+                                });
+                            }
+                        }
+                    }
                 });
             }
         });
+    }
+
+    pub fn show_active_animations(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Active Animations");
+        ui.separator();
+        
+        let mut processes: Vec<(u32, String, u64)> = {
+            let ps = Self::lock_process_store(&self.process_store);
+            ps.processes.iter()
+                .map(|(pid, proc)| (*pid, proc.name.clone(), proc.start_time))
+                .collect()
+        };
+        
+        // Sort by name, then by start time
+        processes.sort_by(|a, b| {
+            a.1.cmp(&b.1).then_with(|| a.2.cmp(&b.2))
+        });
+        
+        if processes.is_empty() {
+            ui.centered_and_justified(|ui| {
+                ui.label("No active animations.");
+            });
+            return;
+        }
+        
+        // Group by name to show counts
+        use std::collections::HashMap;
+        let mut name_counts: HashMap<String, usize> = HashMap::new();
+        for (_, name, _) in &processes {
+            *name_counts.entry(name.clone()).or_insert(0) += 1;
+        }
+        
+        ui.label(format!("Total: {} animation{} running", 
+            processes.len(),
+            if processes.len() == 1 { "" } else { "s" }
+        ));
+        ui.separator();
+        
+        egui::ScrollArea::vertical()
+            .auto_shrink([false; 2])
+            .show(ui, |ui| {
+                let mut current_name: Option<String> = None;
+                
+                for (pid, name, start_time) in &processes {
+                    // Show group header when name changes
+                    if current_name.as_ref() != Some(name) {
+                        if current_name.is_some() {
+                            ui.add_space(5.0);
+                        }
+                        current_name = Some(name.clone());
+                        let count = name_counts.get(name).unwrap_or(&1);
+                        ui.heading(format!("{} ({})", name, count));
+                    }
+                    
+                    // Calculate runtime
+                    let runtime_secs = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .saturating_sub(*start_time);
+                    let runtime_str = if runtime_secs < 60 {
+                        format!("{}s", runtime_secs)
+                    } else if runtime_secs < 3600 {
+                        format!("{}m {}s", runtime_secs / 60, runtime_secs % 60)
+                    } else {
+                        format!("{}h {}m", runtime_secs / 3600, (runtime_secs % 3600) / 60)
+                    };
+                    
+                    ui.horizontal(|ui| {
+                        ui.label(format!("PID: {} | Runtime: {}", pid, runtime_str));
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.button("⏹ Stop").clicked() {
+                                if let Ok(mut ps) = self.process_store.lock() {
+                                    let _ = ps.kill_process(*pid);
+                                }
+                            }
+                        });
+                    });
+                }
+            });
     }
 }
 

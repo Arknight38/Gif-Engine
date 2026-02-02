@@ -1,17 +1,16 @@
 use eframe::egui;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
-use std::thread;
 use crate::app::store::Store;
 use crate::app::process::ProcessStore;
 use crate::types::{Frame, AnimationInfo};
-use crate::gui::tray::{TrayCommand, get_auto_launch, spawn_tray_thread};
+use crate::gui::tray::{TrayCommand, get_auto_launch};
 use crate::gui::preview::PreviewState;
-use crate::gui::views;
 
 #[derive(PartialEq)]
 pub enum ViewMode {
     Library,
+    Active,
     Settings,
 }
 
@@ -30,6 +29,7 @@ pub struct AnimeApp {
     // UI State
     pub refresh_timer: std::time::Instant,
     pub input_path: String,
+    pub search_query: String, // Search query for library filtering
     
     // Tray
     pub _tray_icon: Option<tray_icon::TrayIcon>,
@@ -80,6 +80,7 @@ impl AnimeApp {
             load_error: None,
             refresh_timer: std::time::Instant::now(),
             input_path: String::new(),
+            search_query: String::new(),
             _tray_icon: tray_icon,
             _tray_menu: tray_menu,
             quit_item,
@@ -142,7 +143,10 @@ impl eframe::App for AnimeApp {
                 }
                 Err(mpsc::TryRecvError::Empty) => break,
                 Err(mpsc::TryRecvError::Disconnected) => {
-                    #[cfg(debug_assertions)]
+                    // On Windows, the tray thread handles commands directly via Windows APIs
+                    // and doesn't use the channel, so disconnection is expected
+                    // Only log on non-Windows platforms where the channel is actually used
+                    #[cfg(all(debug_assertions, not(target_os = "windows")))]
                     eprintln!("[DEBUG] GUI: Tray thread channel disconnected");
                     break;
                 }
@@ -281,11 +285,16 @@ impl eframe::App for AnimeApp {
             .resizable(true)
             .default_width(250.0)
             .show(ctx, |ui| {
-                ui.vertical(|ui| {
-                    views::AnimeApp::show_library(self, ui);
-                });
+                // Wrap entire sidebar in scroll area
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        ui.vertical(|ui| {
+                            self.show_library(ui);
+                        });
+                    });
                 
-                // Bottom Settings Button
+                // Bottom Navigation Buttons (outside scroll area so they stay visible)
                 ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                     ui.add_space(10.0);
                     if ui.selectable_label(self.view == ViewMode::Settings, "⚙ Settings").clicked() {
@@ -293,25 +302,38 @@ impl eframe::App for AnimeApp {
                         self.selected_name = None; // Deselect animation when going to settings
                     }
                     ui.separator();
+                    if ui.selectable_label(self.view == ViewMode::Active, "▶ Active").clicked() {
+                        self.view = ViewMode::Active;
+                        self.selected_name = None; // Deselect animation when going to active
+                    }
+                    ui.separator();
                 });
             });
 
         // MAIN CONTENT
         egui::CentralPanel::default().show(ctx, |ui| {
-             match self.view {
-                 ViewMode::Library => {
-                     if let Some(name) = &self.selected_name {
-                         views::AnimeApp::show_selected_animation(self, ui, name.clone());
-                     } else {
-                         ui.centered_and_justified(|ui| {
-                             ui.label("Select an animation from the library to edit.");
-                         });
-                     }
-                 },
-                 ViewMode::Settings => {
-                     views::AnimeApp::show_settings_panel(self, ui);
-                 }
-             }
+            // Wrap content in scroll area to handle overflow
+            egui::ScrollArea::vertical()
+                .auto_shrink([false; 2])
+                .show(ui, |ui| {
+                    match self.view {
+                        ViewMode::Library => {
+                            if let Some(name) = &self.selected_name {
+                                self.show_selected_animation(ui, name.clone());
+                            } else {
+                                ui.centered_and_justified(|ui| {
+                                    ui.label("Select an animation from the library to edit.");
+                                });
+                            }
+                        },
+                        ViewMode::Active => {
+                            self.show_active_animations(ui);
+                        },
+                        ViewMode::Settings => {
+                            self.show_settings_panel(ui);
+                        }
+                    }
+                });
         });
         
         // CRITICAL: Always request a repaint to keep update() being called
