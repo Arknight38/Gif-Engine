@@ -1,0 +1,137 @@
+# Labeler Configuration for Gif-Engine
+# This file defines rules for automatically labeling PRs based on changed files
+
+# Documentation changes
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - '**/*.md'
+      - 'docs/**/*'
+      - 'LICENSE'
+
+# GitHub specific files
+github:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - '.github/**/*'
+
+# CI/CD changes
+ci-cd:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - '.github/workflows/**/*'
+      - 'release.ps1'
+      - 'release.sh'
+
+# Dependencies
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+
+# Core application code
+core:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/app/**/*'
+      - 'src/main.rs'
+
+# GUI/Frontend
+gui:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/gui/**/*'
+
+# Decoder/Animation handling
+decoder:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/decoder/**/*'
+
+# Renderer/Graphics
+renderer:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/renderer/**/*'
+
+# Playback system
+playback:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/playback/**/*'
+
+# Platform-specific code
+platform:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/platform/**/*'
+
+# Windows-specific
+windows:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/platform/windows.rs'
+      - '**/windows/**/*'
+
+# Cache/Performance
+performance:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/cache/**/*'
+
+# Tests
+tests:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'src/**/*_test.rs'
+      - 'tests/**/*'
+      - '**/test*.rs'
+
+# Configuration files
+config:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - '.gitignore'
+      - '.editorconfig'
+      - 'rustfmt.toml'
+      - '.cargo/**/*'
+
+# Assets/Resources
+assets:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'assets/**/*'
+      - 'src/icon.png'
+      - '**/*.png'
+      - '**/*.gif'
+      - '**/*.svg'
+
+# Major version changes (if version >= 2.0.0)
+breaking:
+  - changed-files:
+    - any-glob-to-any-file: 'Cargo.toml'
+    - all-globs-to-all-files:
+      - 'src/app/store.rs'
+      - 'src/types.rs'
+
+# Size labels based on lines changed
+size/XS:
+  - changed-files:
+    - any-glob-to-any-file: '*'
+
+size/S:
+  - changed-files:
+    - any-glob-to-any-file: '*'
+
+size/M:
+  - changed-files:
+    - any-glob-to-any-file: '*'
+
+size/L:
+  - changed-files:
+    - any-glob-to-any-file: '*'
+
+size/XL:
+  - changed-files:
+    - any-glob-to-any-file: '*'

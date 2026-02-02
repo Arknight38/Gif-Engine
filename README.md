@@ -12,9 +12,9 @@ I started this project because I wanted something better than Anima Engine. The 
 
 ## Screenshots
 
-<img width="1006" height="734" alt="image" src="https://github.com/user-attachments/assets/cfbb6257-f11b-4549-bbfd-55189ed11d41" />
+<img width="1002" height="736" alt="image" src="https://github.com/user-attachments/assets/6f3419a2-5d38-42b1-a154-c6a720cb5368" />
 
-<img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/6d5e950d-e137-43ab-b1b8-03c24d571030" />
+<img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/8b29ccb7-0ae5-46f1-8dec-5f93e41c39d7" />
 
 ![demo](https://github.com/user-attachments/assets/55d98732-69e1-40e6-a611-964de794a1bf)
 
@@ -59,16 +59,12 @@ Tag your animations for easy organization! In the animation settings, you can:
 - Remove tags by clicking the ✖ button on any tag
 - Tags are displayed below animation names in the library list
 
-<!-- TODO: Screenshot of tag editing UI -->
-
 ### Searching your library
 Use the search bar at the top of the library panel to quickly find animations:
 - Search by animation name (case-insensitive)
 - Search by tags
 - Results update in real-time as you type
 - Click the ✖ button to clear your search
-
-<!-- TODO: Screenshot of search functionality -->
 
 ### Playback and customization
 Select any animation and hit Play. From the settings panel you can adjust:
@@ -87,7 +83,7 @@ Switch to the **Active** tab to see all running animations:
 - Stop individual animations
 - Running animations are also marked in the library with a ▶ indicator
 
-<!-- TODO: Screenshot of Active animations tab -->
+<img width="588" height="330" alt="image" src="https://github.com/user-attachments/assets/f67f0867-c62b-4de0-a22e-b69aca2a9237" />
 
 ### Export and Import
 Backup your entire library or share it with others:
@@ -105,7 +101,7 @@ Backup your entire library or share it with others:
 - Settings and library entries are merged with your existing data
 - All file paths are automatically updated to work on your system
 
-<!-- TODO: Screenshot of export/import UI -->
+<img width="589" height="387" alt="image" src="https://github.com/user-attachments/assets/3c662c00-735e-41f7-bfbb-9ff72bfd9801" />
 
 ---
 
