@@ -77,7 +77,17 @@ pub fn play(
 
     println!("Starting event loop...");
     event_loop.run(move |event, elwt| {
-        elwt.set_control_flow(ControlFlow::Poll);
+        // Default to waiting until next frame deadline (much lower CPU than Poll).
+        // If click-through is enabled we still periodically wake to poll Ctrl state.
+        let now = Instant::now();
+        let next_frame_deadline = last_frame_time + current_delay;
+        let ctrl_poll_interval = Duration::from_millis(50);
+        let next_wakeup = if click_through {
+            std::cmp::min(next_frame_deadline, now + ctrl_poll_interval)
+        } else {
+            next_frame_deadline
+        };
+        elwt.set_control_flow(ControlFlow::WaitUntil(next_wakeup));
 
         // When click-through is enabled, poll for Ctrl key state globally in every frame
         // This allows us to temporarily disable click-through when Ctrl is held
@@ -135,7 +145,7 @@ pub fn play(
                 }
             }
             Event::AboutToWait => {
-                if last_frame_time.elapsed() >= current_delay {
+                if Instant::now().duration_since(last_frame_time) >= current_delay {
                     let frame = frames.next();
                     current_delay = frame.delay;
                     last_frame_time = Instant::now();

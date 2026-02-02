@@ -4,6 +4,7 @@ use std::thread;
 use std::process::Command;
 use crate::app::store::GifConfig;
 use crate::gui::app::{AnimeApp, ViewMode};
+use crate::gui::hotkeys::is_key_valid;
 
 impl AnimeApp {
     pub fn show_settings_panel(&mut self, ui: &mut egui::Ui) {
@@ -59,6 +60,66 @@ impl AnimeApp {
                  let _ = store.save();
              }
              ui.label(egui::RichText::new("When enabled, animations won't block mouse clicks. Hold Ctrl and drag to move them.").small().weak());
+
+             ui.add_space(15.0);
+             ui.label(egui::RichText::new("Global Hotkeys (Windows)").size(16.0));
+             ui.label(egui::RichText::new("Supported keys: A-Z, 0-9, F1-F24. Hotkeys require exact modifier match.").small().weak());
+
+             let mut hotkeys_changed = false;
+
+             // Toggle Manager Window hotkey
+             {
+                 let hk = &mut store.settings.hotkeys.toggle_manager;
+                 ui.group(|ui| {
+                     ui.horizontal(|ui| {
+                         hotkeys_changed |= ui.checkbox(&mut hk.enabled, "Enable").changed();
+                         ui.label("Toggle Manager");
+                     });
+                     ui.horizontal(|ui| {
+                         ui.label("Modifiers:");
+                         hotkeys_changed |= ui.checkbox(&mut hk.ctrl, "Ctrl").changed();
+                         hotkeys_changed |= ui.checkbox(&mut hk.alt, "Alt").changed();
+                         hotkeys_changed |= ui.checkbox(&mut hk.shift, "Shift").changed();
+                         hotkeys_changed |= ui.checkbox(&mut hk.win, "Win").changed();
+                     });
+                     ui.horizontal(|ui| {
+                         ui.label("Key:");
+                         hotkeys_changed |= ui.text_edit_singleline(&mut hk.key).changed();
+                         if !hk.key.trim().is_empty() && !is_key_valid(&hk.key) {
+                             ui.label(egui::RichText::new("Invalid key").color(egui::Color32::RED));
+                         }
+                     });
+                 });
+             }
+
+             // Stop All Animations hotkey
+             {
+                 let hk = &mut store.settings.hotkeys.stop_all;
+                 ui.group(|ui| {
+                     ui.horizontal(|ui| {
+                         hotkeys_changed |= ui.checkbox(&mut hk.enabled, "Enable").changed();
+                         ui.label("Stop All Animations");
+                     });
+                     ui.horizontal(|ui| {
+                         ui.label("Modifiers:");
+                         hotkeys_changed |= ui.checkbox(&mut hk.ctrl, "Ctrl").changed();
+                         hotkeys_changed |= ui.checkbox(&mut hk.alt, "Alt").changed();
+                         hotkeys_changed |= ui.checkbox(&mut hk.shift, "Shift").changed();
+                         hotkeys_changed |= ui.checkbox(&mut hk.win, "Win").changed();
+                     });
+                     ui.horizontal(|ui| {
+                         ui.label("Key:");
+                         hotkeys_changed |= ui.text_edit_singleline(&mut hk.key).changed();
+                         if !hk.key.trim().is_empty() && !is_key_valid(&hk.key) {
+                             ui.label(egui::RichText::new("Invalid key").color(egui::Color32::RED));
+                         }
+                     });
+                 });
+             }
+
+             if hotkeys_changed {
+                 let _ = store.save();
+             }
         });
         
         ui.add_space(20.0);

@@ -2,6 +2,7 @@ mod tray;
 mod preview;
 mod app;
 mod views;
+mod hotkeys;
 
 pub use app::AnimeApp;
 pub use tray::TrayCommand;

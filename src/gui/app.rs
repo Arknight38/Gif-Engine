@@ -6,6 +6,7 @@ use crate::app::process::ProcessStore;
 use crate::types::{Frame, AnimationInfo};
 use crate::gui::tray::{TrayCommand, get_auto_launch};
 use crate::gui::preview::PreviewState;
+use crate::gui::hotkeys::init_global_hotkeys;
 
 #[derive(PartialEq)]
 pub enum ViewMode {
@@ -70,9 +71,15 @@ impl AnimeApp {
             false
         };
 
+        let store = Arc::new(Mutex::new(Store::load()));
+        let process_store = Arc::new(Mutex::new(ProcessStore::load()));
+
+        // Global hotkeys (Windows): runs a background hook thread once per process
+        init_global_hotkeys(store.clone(), process_store.clone());
+
         Self {
-            store: Arc::new(Mutex::new(Store::load())),
-            process_store: Arc::new(Mutex::new(ProcessStore::load())),
+            store,
+            process_store,
             view: ViewMode::Library,
             selected_name: None,
             preview: None,
@@ -348,10 +355,16 @@ impl eframe::App for AnimeApp {
                 });
         });
         
-        // CRITICAL: Always request a repaint to keep update() being called
-        // This ensures tray commands are processed even when window is hidden
-        // We use a short delay (50ms) to keep the event loop active
-        ctx.request_repaint_after(std::time::Duration::from_millis(50));
+        // Avoid a fixed repaint loop (saves CPU).
+        // - Preview animation already schedules repaints via `PreviewState::update()`.
+        // - Otherwise, just wake up around our 1s refresh cadence, or sooner while loading.
+        if self.preview.is_none() {
+            let refresh_remaining = std::time::Duration::from_secs(1)
+                .saturating_sub(self.refresh_timer.elapsed());
+
+            let idle_wakeup = if self.is_loading { std::time::Duration::from_millis(100) } else { refresh_remaining };
+            ctx.request_repaint_after(idle_wakeup);
+        }
     }
 }
 

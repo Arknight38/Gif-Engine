@@ -1946,7 +1946,7 @@ dependencies = [
 
 [[package]]
 name = "gif-engine"
-version = "1.4.0"
+version = "1.7.0"
 dependencies = [
  "auto-launch",
  "clap",

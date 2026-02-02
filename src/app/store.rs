@@ -29,6 +29,32 @@ pub struct AppSettings {
     pub minimize_to_tray: bool,
     #[serde(default = "default_click_through")]
     pub click_through: bool,
+    #[serde(default)]
+    pub hotkeys: HotkeysSettings,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct HotkeyConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub ctrl: bool,
+    #[serde(default)]
+    pub alt: bool,
+    #[serde(default)]
+    pub shift: bool,
+    #[serde(default)]
+    pub win: bool,
+    #[serde(default)]
+    pub key: String, // e.g. "G", "F8"
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct HotkeysSettings {
+    #[serde(default = "default_hotkey_toggle_manager")]
+    pub toggle_manager: HotkeyConfig,
+    #[serde(default = "default_hotkey_stop_all")]
+    pub stop_all: HotkeyConfig,
 }
 
 fn default_theme() -> String {
@@ -43,12 +69,44 @@ fn default_click_through() -> bool {
     false
 }
 
+fn default_hotkey_toggle_manager() -> HotkeyConfig {
+    HotkeyConfig {
+        enabled: true,
+        ctrl: true,
+        alt: true,
+        shift: false,
+        win: false,
+        key: "G".to_string(),
+    }
+}
+
+fn default_hotkey_stop_all() -> HotkeyConfig {
+    HotkeyConfig {
+        enabled: true,
+        ctrl: true,
+        alt: true,
+        shift: false,
+        win: false,
+        key: "K".to_string(),
+    }
+}
+
+impl Default for HotkeysSettings {
+    fn default() -> Self {
+        Self {
+            toggle_manager: default_hotkey_toggle_manager(),
+            stop_all: default_hotkey_stop_all(),
+        }
+    }
+}
+
 impl Default for AppSettings {
     fn default() -> Self {
         Self {
             theme: default_theme(),
             minimize_to_tray: default_minimize_to_tray(),
             click_through: default_click_through(),
+            hotkeys: HotkeysSettings::default(),
         }
     }
 }
