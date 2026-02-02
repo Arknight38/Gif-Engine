@@ -43,7 +43,6 @@ Executable will be in `target/release/gif-engine.exe`.
 - **Smart library management** - Bulk import with automatic file copying to prevent broken references
 - **Tags and search** - Organize your library with tags and quickly find animations by name or tag
 - **Active animations manager** - View and control all running animations from a dedicated tab
-- **Multiple instances** - Run multiple copies of the same animation simultaneously
 - **Export/Import** - Backup and share your entire library (animations + settings) as a portable ZIP file
 - **System integration** - Runs from the tray, optional auto-start, windows stay out of your taskbar
 
@@ -72,7 +71,7 @@ Use the search bar at the top of the library panel to quickly find animations:
 <!-- TODO: Screenshot of search functionality -->
 
 ### Playback and customization
-Select any animation and hit Play. You can run multiple instances of the same animation if desired. From the settings panel you can adjust:
+Select any animation and hit Play. From the settings panel you can adjust:
 - Target FPS for speed control
 - Scale for sizing
 - Alignment for positioning
@@ -84,9 +83,9 @@ Settings persist automatically between sessions.
 ### Managing active animations
 Switch to the **Active** tab to see all running animations:
 - View all active animations with their process IDs
-- See runtime for each instance
-- Stop individual animations or all instances of a specific animation
-- Running animations are also marked in the library with a ▶ indicator and count
+- See runtime for each animation
+- Stop individual animations
+- Running animations are also marked in the library with a ▶ indicator
 
 <!-- TODO: Screenshot of Active animations tab -->
 
@@ -132,7 +131,6 @@ This project is actively evolving. Here's where things stand:
 - System tray integration
 - Tags and search functionality
 - Active animations management
-- Multiple instance support
 - Export/Import library and settings (ZIP format)
 
 Want to contribute? Check out issues tagged [`enhancement`](https://github.com/Arknight38/Gif-Engine/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) or [`good first issue`](https://github.com/Arknight38/Gif-Engine/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).

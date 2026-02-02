@@ -30,6 +30,7 @@ pub struct AnimeApp {
     pub refresh_timer: std::time::Instant,
     pub input_path: String,
     pub search_query: String, // Search query for library filtering
+    pub new_tag_input: String, // Temporary input for adding new tags
     
     // Tray
     pub _tray_icon: Option<tray_icon::TrayIcon>,
@@ -81,6 +82,7 @@ impl AnimeApp {
             refresh_timer: std::time::Instant::now(),
             input_path: String::new(),
             search_query: String::new(),
+            new_tag_input: String::new(),
             _tray_icon: tray_icon,
             _tray_menu: tray_menu,
             quit_item,
@@ -210,6 +212,16 @@ impl eframe::App for AnimeApp {
                     // Quit application
                     #[cfg(debug_assertions)]
                     eprintln!("[DEBUG] Window close requested (X button) - quitting application (minimize_to_tray=false)");
+                    
+                    // Kill all running animation processes before exiting
+                    {
+                        let mut ps = Self::lock_process_store(&self.process_store);
+                        let pids: Vec<u32> = ps.processes.keys().cloned().collect();
+                        for pid in pids {
+                            let _ = ps.kill_process(pid);
+                        }
+                    }
+                    
                     self.should_exit = true;
                     // Don't cancel close, let it propagate.
                     // But we should also make sure the process actually exits, 

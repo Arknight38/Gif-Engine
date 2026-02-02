@@ -199,37 +199,39 @@ impl AnimeApp {
 
             // Controls
             ui.horizontal(|ui| {
-                // Get count of running instances
-                let running_count = {
+                let is_running = {
                     let ps = Self::lock_process_store(&self.process_store);
-                    ps.processes.values().filter(|info| info.name == name).count()
+                    ps.processes.values().any(|info| info.name == name)
                 };
 
-                // Always show Play button - allow multiple instances
-                if ui.button("▶ Play").clicked() {
-                    to_launch = Some(name.clone());
-                }
-                
-                // Show count if running
-                if running_count > 0 {
-                    ui.label(format!("({} running)", running_count));
-                }
-                
-                // Show Stop All button if any are running
-                if running_count > 0 {
-                    if ui.button("⏹ Stop All").clicked() {
-                        let pids: Vec<u32> = {
+                if is_running {
+                    if ui.button("🔄 Restart").clicked() {
+                        // Kill existing
+                        let pid_opt = {
                             let ps = Self::lock_process_store(&self.process_store);
-                            ps.processes.iter()
-                                .filter(|(_, info)| info.name == name)
-                                .map(|(pid, _)| *pid)
-                                .collect()
+                            ps.processes.iter().find(|(_, info)| info.name == name).map(|(pid, _)| *pid)
                         };
-                        if let Ok(mut ps) = self.process_store.lock() {
-                            for pid in pids {
-                                let _ = ps.kill_process(pid);
+                        if let Some(pid) = pid_opt {
+                            if let Ok(mut ps) = self.process_store.lock() { 
+                                ps.kill_process(pid); 
                             }
                         }
+                        to_launch = Some(name.clone());
+                    }
+                    if ui.button("⏹ Stop").clicked() {
+                        let pid_opt = {
+                            let ps = Self::lock_process_store(&self.process_store);
+                            ps.processes.iter().find(|(_, info)| info.name == name).map(|(pid, _)| *pid)
+                        };
+                        if let Some(pid) = pid_opt {
+                            if let Ok(mut ps) = self.process_store.lock() { 
+                                ps.kill_process(pid); 
+                            }
+                        }
+                    }
+                } else {
+                    if ui.button("▶ Play").clicked() {
+                        to_launch = Some(name.clone());
                     }
                 }
                 
@@ -358,20 +360,21 @@ impl AnimeApp {
                         }
                         
                         // Add new tag input
-                        let mut new_tag = String::new();
-                        let response = ui.text_edit_singleline(&mut new_tag);
+                        let response = ui.text_edit_singleline(&mut self.new_tag_input);
                         if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                            let trimmed = new_tag.trim().to_string();
+                            let trimmed = self.new_tag_input.trim().to_string();
                             if !trimmed.is_empty() && !config.tags.contains(&trimmed) {
-                                config.tags.push(trimmed);
+                                config.tags.push(trimmed.clone());
                                 should_save = true;
+                                self.new_tag_input.clear();
                             }
                         }
                         if ui.button("+").clicked() {
-                            let trimmed = new_tag.trim().to_string();
+                            let trimmed = self.new_tag_input.trim().to_string();
                             if !trimmed.is_empty() && !config.tags.contains(&trimmed) {
-                                config.tags.push(trimmed);
+                                config.tags.push(trimmed.clone());
                                 should_save = true;
+                                self.new_tag_input.clear();
                             }
                         }
                     });
@@ -385,16 +388,15 @@ impl AnimeApp {
         }
         
         if let Some(n) = to_delete {
-            // Kill all running instances of this animation
-            let pids: Vec<u32> = {
+            // Kill running instance of this animation
+            let pid_opt = {
                 let ps = Self::lock_process_store(&self.process_store);
                 ps.processes.iter()
-                    .filter(|(_, info)| info.name == n)
+                    .find(|(_, info)| info.name == n)
                     .map(|(pid, _)| *pid)
-                    .collect()
             };
-            if let Ok(mut ps) = self.process_store.lock() {
-                for pid in pids {
+            if let Some(pid) = pid_opt {
+                if let Ok(mut ps) = self.process_store.lock() {
                     let _ = ps.kill_process(pid);
                 }
             }
@@ -421,6 +423,17 @@ impl AnimeApp {
     }
 
     pub fn launch_animation(&mut self, config: &GifConfig) {
+        // Check if animation is already running
+        let is_running = {
+            let ps = Self::lock_process_store(&self.process_store);
+            ps.processes.values().any(|info| info.name == config.name)
+        };
+        
+        if is_running {
+            // Animation is already running, don't launch another instance
+            return;
+        }
+        
         let exe = match std::env::current_exe() {
             Ok(exe) => exe,
             Err(e) => {
@@ -574,14 +587,14 @@ impl AnimeApp {
                 ui.push_id(&name, |ui| {
                     let is_selected = self.selected_name.as_ref() == Some(&name);
                     
-                    // Check running status and count
-                    let running_count = {
+                    // Check running status
+                    let is_running = {
                          let ps = Self::lock_process_store(&self.process_store);
-                         ps.processes.values().filter(|info| info.name == name).count()
+                         ps.processes.values().any(|info| info.name == name)
                     };
 
-                    let label = if running_count > 0 {
-                        format!("▶ {} ({})", name, running_count)
+                    let label = if is_running {
+                        format!("▶ {}", name)
                     } else {
                         name.clone()
                     };
@@ -595,6 +608,7 @@ impl AnimeApp {
                         self.view = ViewMode::Library; // Ensure we switch back to library view
                         if !is_selected {
                             self.selected_name = Some(name.clone());
+                            self.new_tag_input.clear(); // Clear tag input when switching animations
                             // Trigger load
                             if let Some(config) = store.gifs.get(&name) {
                                 let path = config.path.clone();
