@@ -41,6 +41,10 @@ Executable will be in `target/release/gif-engine.exe`.
 - **Multi-process architecture** - Each animation runs independently, so crashes stay isolated
 - **Full customization** - Scale, speed, position, and layer control for every animation
 - **Smart library management** - Bulk import with automatic file copying to prevent broken references
+- **Tags and search** - Organize your library with tags and quickly find animations by name or tag
+- **Active animations manager** - View and control all running animations from a dedicated tab
+- **Multiple instances** - Run multiple copies of the same animation simultaneously
+- **Export/Import** - Backup and share your entire library (animations + settings) as a portable ZIP file
 - **System integration** - Runs from the tray, optional auto-start, windows stay out of your taskbar
 
 ---
@@ -50,14 +54,59 @@ Executable will be in `target/release/gif-engine.exe`.
 ### Adding animations
 Click the folder icon for single files, or use the folder+ icon to scan entire directories. Animations get automatically copied to `%APPDATA%\gif-engine\gifs\`, so you can reorganize your original files without breaking anything.
 
+### Organizing with tags
+Tag your animations for easy organization! In the animation settings, you can:
+- Add tags by typing in the tag field and pressing Enter or clicking the + button
+- Remove tags by clicking the ✖ button on any tag
+- Tags are displayed below animation names in the library list
+
+<!-- TODO: Screenshot of tag editing UI -->
+
+### Searching your library
+Use the search bar at the top of the library panel to quickly find animations:
+- Search by animation name (case-insensitive)
+- Search by tags
+- Results update in real-time as you type
+- Click the ✖ button to clear your search
+
+<!-- TODO: Screenshot of search functionality -->
+
 ### Playback and customization
-Select any animation and hit Play. From there you can adjust:
+Select any animation and hit Play. You can run multiple instances of the same animation if desired. From the settings panel you can adjust:
 - Target FPS for speed control
 - Scale for sizing
 - Alignment for positioning
 - Always on Top for layering
+- Tags for organization
 
 Settings persist automatically between sessions.
+
+### Managing active animations
+Switch to the **Active** tab to see all running animations:
+- View all active animations with their process IDs
+- See runtime for each instance
+- Stop individual animations or all instances of a specific animation
+- Running animations are also marked in the library with a ▶ indicator and count
+
+<!-- TODO: Screenshot of Active animations tab -->
+
+### Export and Import
+Backup your entire library or share it with others:
+
+**Export:**
+- Click "📤 Export Library & Settings" in the Settings panel
+- Creates a ZIP file containing all your animations and settings
+- Perfect for backups or sharing with friends
+- Works across different devices - paths are automatically updated on import
+
+**Import:**
+- Click "📥 Import Library & Settings" in the Settings panel
+- Select a ZIP file exported from Gif-Engine
+- Animations are extracted to your local gifs directory
+- Settings and library entries are merged with your existing data
+- All file paths are automatically updated to work on your system
+
+<!-- TODO: Screenshot of export/import UI -->
 
 ---
 
@@ -81,12 +130,10 @@ This project is actively evolving. Here's where things stand:
 - Library management with bulk import
 - Transparent overlay rendering
 - System tray integration
-
-**In progress:**
-- Scene/profile system for saving layouts
-- Tagging and search for large libraries
-- Global hotkeys for pause/resume
-- Advanced animation controls
+- Tags and search functionality
+- Active animations management
+- Multiple instance support
+- Export/Import library and settings (ZIP format)
 
 Want to contribute? Check out issues tagged [`enhancement`](https://github.com/Arknight38/Gif-Engine/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) or [`good first issue`](https://github.com/Arknight38/Gif-Engine/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
@@ -115,6 +162,9 @@ Try reducing target FPS or scale for resource-heavy animations. Running many ani
 
 **Missing animations after file reorganization?**  
 The app uses copies from `%APPDATA%\gif-engine\gifs\`. If you manually deleted files from there, you'll need to re-import them.
+
+**Want to share your library with someone else?**  
+Use the Export feature in Settings to create a ZIP file containing all your animations and settings. The recipient can use Import to add everything to their library - paths are automatically updated for their system.
 
 ---
 
