@@ -16,7 +16,9 @@ I started this project because I wanted something better than Anima Engine. The 
 
 <img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/8b29ccb7-0ae5-46f1-8dec-5f93e41c39d7" />
 
-![demo](https://github.com/user-attachments/assets/55d98732-69e1-40e6-a611-964de794a1bf)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/55d98732-69e1-40e6-a611-964de794a1bf" alt="demo">
+</p>
 
 ## Quick Start
 
