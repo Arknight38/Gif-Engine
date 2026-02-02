@@ -180,12 +180,10 @@ Standard process:
 
 - [ ] Scene profiles (save and switch between different animation layouts)
 - [x] Tags and search for the library
-- [ ] Global hotkeys (pause all, resume all, toggle visibility)
-- [ ] Per-animation opacity slider
-- [ ] Option to hide animations when a window is fullscreen
+- [x] Global hotkeys (pause all, resume all, toggle visibility)
 - [x] Export / import library and settings
 - [ ] Basic logging window for errors (failed loads, crashes, etc.)
-- [ ] Add a “minimal CPU mode” preset
+- [x] Add a “minimal CPU mode” preset
 - [ ] Support for more formats (e.g. WebP) if it makes sense
 - [ ] Simple in-app “What’s new” / changelog panel
 
