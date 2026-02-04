@@ -1,7 +1,7 @@
 # Gif-Engine
 
 ![Build Status](https://github.com/Arknight38/Gif-Engine/workflows/Rust/badge.svg)
-![Version](https://img.shields.io/badge/version-1.7.0-blue)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 **Desktop animation manager for Windows - built for performance and stability.**
@@ -39,21 +39,32 @@ Executable will be in `target/release/gif-engine.exe`.
 
 ## Features
 
-- **Desktop overlays** - Transparent GIFs and APNGs rendered directly on your screen
-- **Multi-process architecture** - Each animation runs independently, so crashes stay isolated
-- **Full customization** - Scale, speed, position, and layer control for every animation
-- **Smart library management** - Bulk import with automatic file copying to prevent broken references
-- **Tags and search** - Organize your library with tags and quickly find animations by name or tag
-- **Active animations manager** - View and control all running animations from a dedicated tab
-- **Export/Import** - Backup and share your entire library (animations + settings) as a portable ZIP file
-- **System integration** - Runs from the tray, optional auto-start, windows stay out of your taskbar
+- **Community Hub** - Browse and download animation packs directly from the app
+- **Broad Format Support** - Supports GIF, APNG, WebP, PNG, JPG, and more
+- **Desktop Overlays** - Transparent animations rendered directly on your screen
+- **Multi-process Architecture** - Each animation runs independently for maximum stability
+- **Advanced Window Anchoring** - "Pet Mode": Attach animations to specific windows (they follow the window and stay just above it)
+- **Stealth Mode** - Animations are hidden from the taskbar to keep your workspace clean
+- **Behaviors** - Make your animations Bounce or Wander around the screen
+- **Interactive Mode** - Click-through by default, but hold **Ctrl** or **Alt** to drag/interact
+- **Smart Library** - Bulk import, tags, search, and automatic file management
+- **System Integration** - System tray support, auto-start, and hotkeys
 
 ---
 
 ## Using Gif-Engine
 
 ### Adding animations
-Click the folder icon for single files, or use the folder+ icon to scan entire directories. Animations get automatically copied to `%APPDATA%\gif-engine\gifs\`, so you can reorganize your original files without breaking anything.
+Click the folder icon for single files, or use the folder+ icon to scan entire directories. 
+Supported formats: **GIF, APNG, WebP, PNG, JPG**.
+Animations get automatically copied to `%APPDATA%\gif-engine\gifs\`, so you can reorganize your original files without breaking anything.
+
+### Community Hub
+Discover new animations in the **Community** tab! 
+- Browse a growing collection of user-submitted packs
+- One-click download and install
+- Search by name, author, or tags
+- Automatically adds downloaded packs to your library
 
 ### Organizing with tags
 Tag your animations for easy organization! In the animation settings, you can:
@@ -70,13 +81,17 @@ Use the search bar at the top of the library panel to quickly find animations:
 
 ### Playback and customization
 Select any animation and hit Play. From the settings panel you can adjust:
-- Target FPS for speed control
-- Scale for sizing
-- Alignment for positioning
-- Always on Top for layering
-- Tags for organization
+- **Anchoring**: Select a running application to attach the animation to (it will move with the window!)
+- **Behavior**: Choose between **None** (Static), **Bounce** (DVD screensaver style), or **Wander** (Random movement)
+- **Target FPS**: Control speed and CPU usage
+- **Scale**: Resize without losing quality
+- **Alignment**: Position relative to screen or anchored window
+- **Always on Top**: Force the animation to stay above everything else
 
-Settings persist automatically between sessions.
+### Interactive Mode (Click-Through)
+By default, animations are "click-through" - you can click on things behind them.
+- **Hold Ctrl or Alt**: Temporarily enables interaction. You can now drag the animation to move it.
+- **Right-Click (while holding Ctrl/Alt)**: Open the context menu to Pause/Stop/Settings.
 
 ### Managing active animations
 Switch to the **Active** tab to see all running animations:
@@ -130,6 +145,8 @@ This project is actively evolving. Here's where things stand:
 - Tags and search functionality
 - Active animations management
 - Export/Import library and settings (ZIP format)
+- Community Pack Browser
+- Window Anchoring & Behaviors
 
 Want to contribute? Check out issues tagged [`enhancement`](https://github.com/Arknight38/Gif-Engine/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) or [`good first issue`](https://github.com/Arknight38/Gif-Engine/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
@@ -141,7 +158,7 @@ Want to contribute? Check out issues tagged [`enhancement`](https://github.com/A
 The manager process handles the UI and configuration while spawning separate processes for each animation. This isolation means a problematic GIF won't take down your entire session - only its own window crashes.
 
 ### Rendering
-Windows are created with `WS_EX_LAYERED` for per-pixel alpha blending. Frames get decoded through the `image` crate, composited to handle disposal methods correctly, then presented via `UpdateLayeredWindow` for proper transparency.
+Windows are created with `WS_EX_LAYERED` for per-pixel alpha blending and `WS_EX_TOOLWINDOW` to stay hidden from the taskbar. Frames get decoded through the `image` crate, composited to handle disposal methods correctly, then presented via `UpdateLayeredWindow` for proper transparency.
 
 ### Stack
 Built with `egui`/`eframe` for the UI, standard Windows API for window management, and `serde` for state persistence. The full dependency list is in `Cargo.toml`.
@@ -184,8 +201,9 @@ Standard process:
 - [x] Export / import library and settings
 - [ ] Basic logging window for errors (failed loads, crashes, etc.)
 - [x] Add a “minimal CPU mode” preset
-- [ ] Support for more formats (e.g. WebP) if it makes sense
-- [ ] Simple in-app “What’s new” / changelog panel
+- [x] Support for more formats (WebP, PNG, JPG)
+- [x] Window Anchoring (Pet Mode)
+- [x] Community Pack Browser
 
 ---
 
