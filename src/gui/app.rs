@@ -7,12 +7,21 @@ use crate::types::{Frame, AnimationInfo};
 use crate::gui::tray::{TrayCommand, get_auto_launch};
 use crate::gui::preview::PreviewState;
 use crate::gui::hotkeys::init_global_hotkeys;
+use crate::gui::community::PackMetadata;
 
 #[derive(PartialEq)]
 pub enum ViewMode {
     Library,
     Active,
+    Community,
     Settings,
+}
+
+#[derive(PartialEq, Clone, Copy)]
+pub enum ThumbnailState {
+    Loading,
+    Loaded,
+    Failed,
 }
 
 pub struct AnimeApp {
@@ -32,6 +41,12 @@ pub struct AnimeApp {
     pub input_path: String,
     pub search_query: String, // Search query for library filtering
     pub new_tag_input: String, // Temporary input for adding new tags
+
+    // Community packs
+    pub community_loading: bool,
+    pub community_error: Option<String>,
+    pub community_packs: Vec<PackMetadata>,
+    pub community_rx: Option<mpsc::Receiver<Result<Vec<PackMetadata>, String>>>,
     
     // Tray
     pub _tray_icon: Option<tray_icon::TrayIcon>,
@@ -46,6 +61,15 @@ pub struct AnimeApp {
     
     // Global Settings
     pub startup_enabled: bool,
+    
+    // UI State for Window Picker
+    pub open_windows: Vec<String>,
+
+    // Thumbnails
+    pub thumbnail_cache: std::collections::HashMap<String, egui::TextureHandle>,
+    pub thumbnail_states: std::collections::HashMap<String, ThumbnailState>,
+    pub thumbnail_rx: mpsc::Receiver<(String, Option<(usize, usize, Vec<u8>)>)>,
+    pub thumbnail_tx: mpsc::Sender<(String, Option<(usize, usize, Vec<u8>)>)>,
 }
 
 impl AnimeApp {
@@ -77,6 +101,8 @@ impl AnimeApp {
         // Global hotkeys (Windows): runs a background hook thread once per process
         init_global_hotkeys(store.clone(), process_store.clone());
 
+        let (thumb_tx, thumb_rx) = mpsc::channel();
+
         Self {
             store,
             process_store,
@@ -90,6 +116,10 @@ impl AnimeApp {
             input_path: String::new(),
             search_query: String::new(),
             new_tag_input: String::new(),
+            community_loading: false,
+            community_error: None,
+            community_packs: Vec::new(),
+            community_rx: None,
             _tray_icon: tray_icon,
             _tray_menu: tray_menu,
             quit_item,
@@ -98,6 +128,11 @@ impl AnimeApp {
             tray_cmd_rx,
             pending_close_canceled: false,
             startup_enabled,
+            open_windows: Vec::new(),
+            thumbnail_cache: std::collections::HashMap::new(),
+            thumbnail_states: std::collections::HashMap::new(),
+            thumbnail_rx: thumb_rx,
+            thumbnail_tx: thumb_tx,
         }
     }
 }
@@ -294,6 +329,48 @@ impl eframe::App for AnimeApp {
             }
         }
 
+        // Handle async community packs loading
+        if let Some(rx) = &self.community_rx {
+            match rx.try_recv() {
+                Ok(Ok(packs)) => {
+                    self.community_loading = false;
+                    self.community_error = None;
+                    self.community_packs = packs;
+                    self.community_rx = None;
+                }
+                Ok(Err(e)) => {
+                    self.community_loading = false;
+                    self.community_error = Some(e);
+                    self.community_rx = None;
+                }
+                Err(mpsc::TryRecvError::Empty) => {}
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    self.community_loading = false;
+                    self.community_error = Some("Community pack loader disconnected".to_string());
+                    self.community_rx = None;
+                }
+            }
+        }
+
+        // Handle async thumbnail loading
+        while let Ok((id, result)) = self.thumbnail_rx.try_recv() {
+            if let Some((w, h, rgba)) = result {
+                let image = egui::ColorImage::from_rgba_unmultiplied(
+                    [w, h],
+                    &rgba,
+                );
+                let texture = ctx.load_texture(
+                    &id,
+                    image,
+                    egui::TextureOptions::LINEAR
+                );
+                self.thumbnail_cache.insert(id.clone(), texture);
+                self.thumbnail_states.insert(id, ThumbnailState::Loaded);
+            } else {
+                self.thumbnail_states.insert(id, ThumbnailState::Failed);
+            }
+        }
+
         // Update Preview Animation
         if let Some(preview) = &mut self.preview {
             preview.update(ctx);
@@ -304,21 +381,18 @@ impl eframe::App for AnimeApp {
             .resizable(true)
             .default_width(250.0)
             .show(ctx, |ui| {
-                // Wrap entire sidebar in scroll area
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false; 2])
-                    .show(ui, |ui| {
-                        ui.vertical(|ui| {
-                            self.show_library(ui);
-                        });
-                    });
-                
-                // Bottom Navigation Buttons (outside scroll area so they stay visible)
+                // Sidebar Layout: Footer at bottom, Library list fills remaining space above
                 ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                    // 1. Footer (Bottom Navigation)
                     ui.add_space(10.0);
                     if ui.selectable_label(self.view == ViewMode::Settings, "⚙ Settings").clicked() {
                         self.view = ViewMode::Settings;
                         self.selected_name = None; // Deselect animation when going to settings
+                    }
+                    ui.separator();
+                    if ui.selectable_label(self.view == ViewMode::Community, "☁ Community").clicked() {
+                        self.view = ViewMode::Community;
+                        self.selected_name = None;
                     }
                     ui.separator();
                     if ui.selectable_label(self.view == ViewMode::Active, "▶ Active").clicked() {
@@ -326,6 +400,17 @@ impl eframe::App for AnimeApp {
                         self.selected_name = None; // Deselect animation when going to active
                     }
                     ui.separator();
+
+                    // 2. Library List (Top Down, fills remaining space)
+                    ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
+                         egui::ScrollArea::vertical()
+                            .auto_shrink([false; 2])
+                            .show(ui, |ui| {
+                                ui.vertical(|ui| {
+                                    self.show_library(ui);
+                                });
+                            });
+                    });
                 });
             });
 
@@ -347,6 +432,9 @@ impl eframe::App for AnimeApp {
                         },
                         ViewMode::Active => {
                             self.show_active_animations(ui);
+                        },
+                        ViewMode::Community => {
+                            self.show_community_view(ui);
                         },
                         ViewMode::Settings => {
                             self.show_settings_panel(ui);

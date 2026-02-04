@@ -193,7 +193,7 @@ Standard process:
 
 This wouldn't exist without the Rust ecosystem. Key dependencies include `egui`, `winit`, `image`, and `tray-icon`. Full credit list in `Cargo.toml`.
 
-Original inspiration from Anima Engine, though this is a complete rewrite.
+Original inspiration from Anima Engine, though this is a complete new codebase.
 
 ---
 

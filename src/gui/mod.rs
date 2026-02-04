@@ -3,9 +3,7 @@ mod preview;
 mod app;
 mod views;
 mod hotkeys;
-
-pub use app::AnimeApp;
-pub use tray::TrayCommand;
+mod community;
 
 pub fn run_gui() -> Result<(), eframe::Error> {
     use std::sync::Arc;

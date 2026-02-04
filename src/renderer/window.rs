@@ -1,5 +1,7 @@
 use winit::event_loop::EventLoop;
 use winit::window::{Window, WindowBuilder};
+#[cfg(target_os = "windows")]
+use winit::platform::windows::WindowBuilderExtWindows;
 
 pub fn create_window(
     event_loop: &EventLoop<()>,
@@ -13,6 +15,11 @@ pub fn create_window(
         .with_decorations(false) // Borderless
         .with_transparent(true) // Transparent
         .with_visible(true);
+
+    #[cfg(target_os = "windows")]
+    {
+        builder = builder.with_skip_taskbar(true);
+    }
 
     if let Some((x, y)) = position {
         builder = builder.with_position(winit::dpi::PhysicalPosition::new(x, y));

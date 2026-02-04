@@ -62,7 +62,16 @@ enum Commands {
         #[arg(long, default_value = "center")]
         align: String,
 
+        /// Anchor to another window by title
+        #[arg(long)]
+        anchor: Option<String>,
+
+        /// Behavior mode (none, bounce, wander)
+        #[arg(long, default_value = "none")]
+        behavior: String,
+
         /// Monitor Index (0, 1, 2...)
+
         #[arg(long, default_value_t = 0)]
         monitor: usize,
     },
@@ -105,7 +114,7 @@ fn main() {
             }
         }
         // Playback entry used by the GUI when you press Play
-        Some(Commands::Play { file, fps, scale, x, y, overlay, click_through, align, monitor }) => {
+        Some(Commands::Play { file, fps, scale, x, y, overlay, click_through, align, monitor, anchor, behavior }) => {
             println!("Playing from CLI: {:?}", file);
             match decoder::load_animation(file) {
                 Ok((mut info, mut frames)) => {
@@ -150,6 +159,8 @@ fn main() {
                         x.zip(*y),
                         align.clone(),
                         *monitor,
+                        anchor.clone(),
+                        behavior.clone(),
                     ) {
                         eprintln!("Playback error: {}", e);
                     }

@@ -19,6 +19,23 @@ pub struct GifConfig {
     pub overlay: bool,
     #[serde(default)]
     pub tags: Vec<String>, // Tags for organization and search
+    #[serde(default)]
+    pub anchor: Option<String>,
+    #[serde(default)]
+    pub behavior: Behavior,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum Behavior {
+    None,
+    Bounce,
+    Wander,
+}
+
+impl Default for Behavior {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -119,7 +136,7 @@ pub struct Store {
 }
 
 impl Store {
-    fn gifs_dir() -> PathBuf {
+    pub fn gifs_dir() -> PathBuf {
         let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
         config_dir.join("gif-engine").join("gifs")
     }
@@ -193,6 +210,8 @@ impl Store {
             monitor: 0,
             overlay: true,
             tags: Vec::new(),
+            anchor: None,
+            behavior: Behavior::None,
         };
         self.gifs.insert(name, config);
         
